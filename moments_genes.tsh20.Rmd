@@ -1,0 +1,536 @@
+---
+title: "Relation between Moments across Datasets"
+subtitle: "Genes/OTU levels: Relation between objects (rows)"
+author: "Lucia Campese"
+date: "Oct 2020"
+output:
+  html_document:
+    code_folding: hide
+    self_contained: true
+---
+
+```{r import, include=F}
+knitr::opts_chunk$set(message = F, error = F, warning = F, echo = F,
+                          cache = T)
+```
+
+<style>
+.column-left{
+  float: left;
+  width: 50%;
+  text-align: left;
+}
+.column-right{
+  float: right;
+  width: 50%;
+  text-align: right;
+}
+</style>
+
+<br>
+
+### Aim 
+
+We want to find the theoretical distributions that better fit our data; to do that, we study the relation between the moments of our distributions (mean and variance, skewness and kurtosis).
+
+<br>
+
+### Datasets
+#### metaB: 
+V9 region; OTU relative abundances; Diatoms; 20-180, SUR. File: barv2016202_swarm_d1_t100.
+
+#### metaG: 
+MATOU-v2 unigene relative abundances (RPKM normalization) renormalized on diatoms total abundance per station; Diatoms; 20-180; SUR.
+
+#### metaT: 
+MATOU-v2 unigene relative abundances (RPKM normalization) renormalized on diatoms total abundance per station; Diatoms; 20-180; SUR.
+
+#### Transcriptomics P.multistriata: 
+Transcriptomes of P. multistriata (Basu et al, 2017); normalization CPM (Counts Per Million).
+
+<br>
+
+
+
+Feature    | metaB                | metaG             | metaT              | Transcriptome
+---------- | -------------------- | ----------------- |------------------- | ----------------
+unit       | OTU                  | unigene           | trascribed unigene | transcribed gene
+condition  | sampling station     | sampling station  | sampling station   | cell
+value type | rel.ab (sum per st=1)| rel.ab (RPKM+dia) | rel.ab(RPKM+dia)   | CPM
+
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+## B) Genes/OTU levels: Relation between objects (rows)
+
+How can we address whether the variability we observe between genes is linked to the response of the organisms to the abiotic and biotic environment or to stochastic statistical fluctuations?
+
+<br>
+
+
+### 1. Occupancy{.tabset}
+
+#### metaB
+```{r a1}
+library(tidyverse)
+library(data.table)
+library(e1071)
+library(readxl)
+
+
+#metab
+metab <- fread("C:/Users/Userszn/Documents/PhD/TARA_Data/metaB/diatoms/barv2016202_swarm_d1_t100.txt", 
+               sep = " ", stringsAsFactors = F) 
+
+
+metab1 <- metab %>% 
+  rename(OTU = V1) %>% 
+  #pivot_longer(`TARA_158_SRF_20-180`:`TARA_078_DCM_20-180`) %>% 
+  gather(key = name, value = value, -OTU) %>% 
+  filter(grepl("SRF", name), value >0) %>% 
+  separate(name, into = c("TARA", "St.label", "roba", "roba2"), sep = "_") %>% 
+  select(OTU, St.label, value)
+
+metabrelab.tsh20 <- metab1 %>% 
+  group_by(OTU) %>% 
+  mutate(occupancy = n_distinct(St.label)) %>% 
+  ungroup() %>% 
+  filter(occupancy > 19) %>% 
+  group_by(St.label) %>% 
+  mutate(relab = value/sum(value)) %>% 
+  ungroup %>% 
+  select(OTU, St.label, relab)
+
+
+metab.tsh20_occupancy <- metabrelab.tsh20 %>% 
+  group_by(OTU) %>% 
+  summarise(n_stations = n_distinct(St.label))
+
+metab.tsh20_occupancy_table <- metab.tsh20_occupancy %>% 
+  select(n_stations) %>% 
+  rename("n of stations" = n_stations) %>% 
+  summary()
+
+metab.tsh20_occupancy %>% 
+  ggplot() +
+  aes(x = n_stations) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 100, 
+                 color = "grey30", 
+                 fill = "white") +
+  geom_density(alpha = .2, fill = "antiquewhite3") +
+  xlab("n of stations") +
+  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
+  theme_bw() +
+  ggtitle(paste0("OTUs occupancy; ", n_distinct(metab.tsh20_occupancy$OTU), " OTUs"),
+          subtitle = "metaB, Diatoms; 20-180um, SUR") +
+  annotation_custom(gridExtra::tableGrob(metab.tsh20_occupancy_table), xmin=50, xmax=75, 
+                    ymin=0.4, ymax=0.06)
+```
+
+#### metaG
+
+```{r a2}
+#falkor
+###metaG
+library(tidyverse)
+library(data.table)
+library(e1071)
+
+metag <- fread("C:/Users/Userszn/Documents/PhD/script/metaB_metaG_metaT_cfrall/tables_Samir/table_metaG_TSS_samegenes.csv")
+
+
+metag.tsh20 <- metag %>% 
+  pivot_longer("007":"210") %>% 
+  rename(St.label = name) %>% 
+  filter(value > 0)
+
+metag.tsh20_occupancy <- metag.tsh20 %>% 
+  group_by(geneid) %>% 
+  summarise(n_stations = n_distinct(St.label))
+
+metag.tsh20_occupancy_table <- metag.tsh20_occupancy %>% 
+  select(n_stations) %>% 
+  rename("n of stations" = n_stations) %>% 
+  summary()
+
+metag.tsh20_occupancy %>% 
+  ggplot() +
+  aes(x = n_stations) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 100, 
+                 color = "grey30", 
+                 fill = "white") +
+  geom_density(alpha = .2, fill = "antiquewhite3") +
+  xlab("n of stations") +
+  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
+  theme_bw() +
+  ggtitle(paste0("unigene occupancy; ", n_distinct(metag.tsh20_occupancy$geneid), " unigenes"),
+          subtitle = "metaG, Diatoms; 20-180um, SUR") +
+  annotation_custom(gridExtra::tableGrob(metag.tsh20_occupancy_table), xmin=50, xmax=75, 
+                    ymin=0.4, ymax=0.06)
+```
+
+
+#### metaT
+```{r a3}
+metat <- fread("C:/Users/Userszn/Documents/PhD/script/metaB_metaG_metaT_cfrall/tables_Samir/table_metaT_TSS_samegenes.csv")
+
+
+metat.tsh20 <- metat %>% 
+  pivot_longer("007":"210") %>% 
+  rename(St.label = name) %>% 
+  filter(value > 0)
+
+metat.tsh20_occupancy <- metat.tsh20 %>% 
+  group_by(geneid) %>% 
+  summarise(n_stations = n_distinct(St.label))
+
+metat.tsh20_occupancy_table <- metat.tsh20_occupancy %>% 
+  select(n_stations) %>% 
+  rename("n of stations" = n_stations) %>% 
+  summary()
+
+metat.tsh20_occupancy %>% 
+  ggplot() +
+  aes(x = n_stations) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 100, 
+                 color = "grey30", 
+                 fill = "white") +
+  geom_density(alpha = .2, fill = "antiquewhite3") +
+  xlab("n of stations") +
+  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
+  theme_bw() +
+  ggtitle(paste0("unigene occupancy; ", n_distinct(metat.tsh20_occupancy$geneid), " unigenes"),
+          subtitle = "metaT, Diatoms; 20-180um, SUR") +
+  annotation_custom(gridExtra::tableGrob(metat.tsh20_occupancy_table), xmin=50, xmax=75, 
+                    ymin=0.4, ymax=0.06)
+```
+
+
+### 2. Relation between moments: mean-variance{.tabset} 
+
+#### metaB
+
+```{r c1}
+moments_metab.tsh20_otus <- metabrelab.tsh20 %>% 
+  group_by(OTU) %>%
+  summarise(mean = mean(relab),
+            variance = var(relab),
+            skewness = skewness(relab),
+            kurtosis = kurtosis(relab),
+            n_stations = n_distinct(St.label)) %>%
+  mutate(logme = log10(mean), logvar = log10(variance),
+         source = c("metab_tara"))
+
+moments_metab.tsh20_otus %>%
+  ggplot() + 
+  aes(x=mean, y=variance) + 
+  geom_point(aes(col=n_stations), size = 0.5) +
+  scale_colour_viridis_c() +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  theme_bw() +
+  scale_x_log10() +
+  scale_y_log10() +
+  ggtitle(paste0("Mean and Variance; ",
+                 n_distinct(moments_metab.tsh20_otus$OTU), " OTUs"),
+          subtitle = ("metaB, diatoms, 20-180, SUR"))
+```
+
+
+#### metaG
+
+```{r c2, eval=TRUE}
+moments_metag.tsh20 <- metag.tsh20 %>%
+  group_by(geneid) %>%
+  summarise(mean = mean(value),
+            variance = var(value),
+            skewness = skewness(value),
+            kurtosis = kurtosis(value),
+            n_stations = n_distinct(St.label)) %>%
+  mutate(logme = log10(mean), logvar = log10(variance),
+         source = c("metag_tara"))
+
+
+moments_metag.tsh20 %>%
+  ggplot() + 
+  aes(x=mean, y=variance) + 
+  #geom_point(col = "gray", size = 0.1) +
+  geom_point(aes(col=n_stations), size = 0.5) +
+  scale_colour_viridis_c() +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  theme_bw() +
+  scale_x_log10() +
+  scale_y_log10() +
+  ggtitle(paste0("Mean and Variance; ",
+                 n_distinct(moments_metag.tsh20$geneid), " unigenes"),
+          subtitle = ("metaG, diatoms, 20-180, SUR"))
+```
+
+#### metaT
+```{r c3, eval=TRUE}
+moments_metat.tsh20 <- metat.tsh20 %>%
+  group_by(geneid) %>%
+  summarise(mean = mean(value),
+            variance = var(value),
+            skewness = skewness(value),
+            kurtosis = kurtosis(value),
+            n_stations = n_distinct(St.label)) %>%
+  mutate(logme = log10(mean), logvar = log10(variance),
+         source = c("metat_tara"))
+
+
+moments_metat.tsh20 %>%
+  ggplot() + 
+  aes(x=mean, y=variance) + 
+  #geom_point(col = "gray", size = 0.1) +
+  geom_point(aes(col=n_stations), size = 0.5) +
+  scale_colour_viridis_c() +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  theme_bw() +
+  scale_x_log10() +
+  scale_y_log10() +
+  ggtitle(paste0("Mean and Variance; ",
+                 n_distinct(moments_metat.tsh20$geneid), " unigenes"),
+          subtitle = ("metaT, diatoms, 20-180, SUR"))
+```
+
+
+#### P.multistriata
+
+```{r c4}
+#transcriptomics
+p.mu_ts <-read_xlsx("C:/Users/Userszn/Documents/PhD/script/Pseudonitzschia/Transcriptomics/Copy of all.annot.xlsx")
+p.mu_ts1 <- na.omit(p.mu_ts)
+
+moments_pn <- p.mu_ts1 %>%
+  pivot_longer(M2.4_CE:F50b_SL) %>%
+  #filter(value != 0) %>%
+  group_by(Row.names) %>%
+  summarise(mean = mean(value),
+            variance = var(value),
+            skewness = skewness(value),
+            kurtosis = kurtosis(value)) %>%
+  mutate(logme = log10(mean), 
+         logvar = log10(variance), 
+         source=c("p.multistriata")) %>% 
+  rename(geneid = Row.names)
+
+
+moments_pn %>%
+  ggplot() + 
+  aes(x=mean, y=variance) + 
+  geom_point(col = "gray", size = 0.1) +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  theme_bw() +
+  scale_x_log10() +
+  scale_y_log10() +
+  ggtitle(paste0("Mean and Variance; ",
+                 n_distinct(moments_pn$geneid), " genes"),
+          subtitle = ("Transcriptomes, P.multistriata"))
+```
+
+
+#### All
+
+```{r c5}
+library(gridExtra)
+
+#In order to allow a better comparison of the above shown results across all the datasets, divide, in each dataset, values of each unit (OTU/unigene/gene) by the mean of abundance of all units in each condition (sampling station/cell)
+
+#metab
+metabrelab.tsh20_rescaled <- metabrelab.tsh20 %>% 
+  group_by(St.label) %>% 
+  mutate(mean = mean(relab),
+         value2 = relab/mean) %>% 
+  ungroup() %>% 
+  select(OTU, St.label, value2)
+
+
+moments_metabrelab.tsh20_rescaled <- metabrelab.tsh20_rescaled %>% 
+  group_by(OTU) %>%
+  summarise(mean = mean(value2),
+            variance = var(value2),
+            skewness = skewness(value2),
+            kurtosis = kurtosis(value2),
+            n_stations = n_distinct(St.label)) %>%
+  mutate(logme = log10(mean), logvar = log10(variance),
+         source = c("metab_tara"))
+
+#metag
+metag.tsh20_rescaled <- metag.tsh20 %>% 
+  group_by(St.label) %>% 
+  mutate(mean = mean(value),
+         value2 = value/mean) %>% 
+  ungroup() %>% 
+  select(geneid, St.label, value2)
+
+moments_metag.tsh20_rescaled <- metag.tsh20_rescaled %>% 
+  group_by(geneid) %>%
+  summarise(mean = mean(value2),
+            variance = var(value2),
+            skewness = skewness(value2),
+            kurtosis = kurtosis(value2),
+            n_stations = n_distinct(St.label)) %>%
+  mutate(logme = log10(mean), logvar = log10(variance),
+         source = c("metag_tara"))  
+
+#metat
+metat.tsh20_rescaled <- metat.tsh20 %>% 
+  group_by(St.label) %>% 
+  mutate(mean = mean(value),
+         value2 = value/mean) %>% 
+  ungroup() %>% 
+  select(geneid, St.label, value2)
+
+moments_metat.tsh20_rescaled <- metat.tsh20_rescaled %>% 
+  group_by(geneid) %>%
+  summarise(mean = mean(value2),
+            variance = var(value2),
+            skewness = skewness(value2),
+            kurtosis = kurtosis(value2),
+                        n_stations = n_distinct(St.label)) %>%
+  mutate(logme = log10(mean), logvar = log10(variance),
+         source = c("metat_tara"))
+
+#transcriptmioc data are already ok
+
+moments_metabrelab.tsh20_rescaled <- moments_metabrelab.tsh20_rescaled %>% 
+  rename(geneid = OTU)
+
+moments_pn1 <- moments_pn %>% 
+  mutate(n_stations = as.numeric(c("16"))) %>% 
+  select(geneid, mean, variance, skewness, kurtosis, n_stations, logme, logvar, source)
+
+all_data <- rbind(moments_metabrelab.tsh20_rescaled,
+      moments_metag.tsh20_rescaled,
+      moments_metat.tsh20_rescaled,
+      moments_pn1)
+
+counts <- all_data %>% 
+  group_by(source) %>% 
+  count()
+
+all_data %>%
+  ggplot() + 
+  aes(x=mean, y=variance) + 
+  geom_point(aes(col = source), size = 0.5, alpha = .5) +
+  #  geom_smooth(method = "lm", formula = y ~ x +  I(x^2)) +
+  theme_bw() +
+  scale_x_log10() +
+  scale_y_log10() +
+  annotation_custom(tableGrob(counts, rows=NULL,
+                              theme = ttheme_default(base_size = 8, 
+                                                     base_colour = "black",
+                                                     base_family = "",
+                                                     parse = FALSE,
+                                                     padding = unit(c(4, 4), "mm"))),
+                    xmin=log10(1e-01), 
+                    xmax=log10(1), 
+                    ymin=log10(1e+03), 
+                    ymax=log10(1e+07)) +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  ggtitle("Mean and Variance",
+          subtitle = "All datasets")  +
+  guides(colour = guide_legend(override.aes = list(size=3)))
+
+
+```
+
+### 3. Relation between moments: Skewness-Kurtosis{.tabset}
+
+#### metaB
+
+```{r e1}
+moments_metab.tsh20_otus %>%
+  ggplot() + 
+  aes(x=skewness, y=kurtosis) + 
+  #geom_point(col= "gray", size = 0.5) +
+  geom_point(aes(col=n_stations), size = 0.5) +
+  scale_colour_viridis_c() +
+  geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  theme_bw() +
+  ggtitle(paste0("Skewness and Kurtosis; ",
+                 n_distinct(moments_metab.tsh20_otus$OTU), " OTUs"),
+          subtitle = ("metaB, diatoms, 20-180, SUR"))
+```
+
+#### metaG
+```{r e2, eval=TRUE}
+moments_metag.tsh20 %>%
+  ggplot() + 
+  aes(x=skewness, y=kurtosis) + 
+  #geom_point(col = "gray", size = 0.1) +
+  geom_point(aes(col=n_stations), size = 0.5) +
+  scale_colour_viridis_c() +
+  geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  theme_bw() +
+  ggtitle(paste0("Skewness and Kurtosis; ",
+                 n_distinct(moments_metag.tsh20$geneid), " unigenes"),
+          subtitle = ("metaG, diatoms, 20-180, SUR"))
+dev.off()
+```
+
+
+#### metaT
+```{r e4, eval=TRUE}
+moments_metat.tsh20 %>%
+  ggplot() + 
+  aes(x=skewness, y=kurtosis) + 
+ #geom_point(col = "gray", size = 0.1) +
+  geom_point(aes(col=n_stations), size = 0.5) +
+  scale_colour_viridis_c() +
+  geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  theme_bw() +
+  ggtitle(paste0("Skewness and Kurtosis; ",
+                 n_distinct(moments_metat.tsh20$geneid), " unigenes"),
+          subtitle = ("metaT, diatoms, 20-180, SUR"))
+dev.off()
+```
+
+
+#### P.multistriata
+```{r e5}
+moments_pn %>%
+  ggplot() + 
+  aes(x=skewness, y=kurtosis) + 
+  geom_point(col = "gray", size = 0.1) +
+  geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  theme_bw() +
+  ggtitle(paste0("Skewness and Kurtosis; ",
+                 n_distinct(moments_pn$geneid), " genes"),
+          subtitle = ("Transcriptomes, P.multistriata"))
+```
+
+
+#### All
+
+```{r e6}
+all_data %>%
+  ggplot() + 
+  aes(x=skewness, y=kurtosis) + 
+  geom_point(aes(col = source), size = .5, alpha = .3) +
+  geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  theme_bw() +
+  annotation_custom(tableGrob(counts, rows=NULL,
+                              theme = ttheme_default(base_size = 8, 
+                                                     base_colour = "black",
+                                                     base_family = "",
+                                                     parse = FALSE,
+                                                     padding = unit(c(4, 4), "mm"))),
+                    xmin=0, 
+                    xmax=2, 
+                    ymin=25, 
+                    ymax=45) +
+  #facet_wrap(~source, nrow = 4) +
+  ggtitle("Skewness and Kurtosis",
+          subtitle = "All datasets") +
+   guides(colour = guide_legend(override.aes = list(size=3)))
+```

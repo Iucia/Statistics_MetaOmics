@@ -1,0 +1,450 @@
+---
+title: "Fit per Station"
+subtitle: "metaB"
+author: "Lucia Campese"
+date: "Feb-Mar 2020"
+output:
+  html_document:
+    code_folding: hide
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+<style>
+.column-left{
+  float: left;
+  width: 50%;
+  text-align: left;
+}
+.column-right{
+  float: right;
+  width: 50%;
+  text-align: right;
+}
+</style>
+
+
+## Section One: Station-centered analyses
+
+### Dataset
+##### Omic data: metaB
+##### Taxon: Diatoms
+##### Depth: Surface
+##### Size fraction: 20-180 um
+##### Geographic scale: Global  
+
+<br>
+
+1. Estimate fits
+
+```{r eval=FALSE}
+library(data.table)
+library(tidyverse)
+library(poweRlaw)
+
+print("upload datasets")
+
+##metaB
+metab_reads <- read.delim(file="diatoms.txt", sep = " ", stringsAsFactors = F) %>%
+  select(contains("_"))
+
+#upload environmental data and filter
+dat_samp <- read.delim("dat_samp.txt") %>%
+  filter(Depth  == "SRF", Fraction.size == "20-180") %>%
+  rename(St.label = Station.label) %>%
+  mutate(St.label = sprintf("%03d", as.numeric(substr(St.label, 6, 8)))) %>%
+  select(Sample.id, St.label)
+
+
+###filter metab
+metab2 <- metab_reads[,names(metab_reads)%in%dat_samp$Sample.id] %>%
+  rownames_to_column("cid") %>%
+  gather (Sample.id, values, -cid) %>%
+  merge(dat_samp) %>%
+  filter(values >0) %>%
+  group_by(St.label) %>%
+  mutate(relab = values/sum(values),
+         richness = n_distinct(cid)) %>%
+  select(-c(Sample.id, values)) %>%
+  ungroup()
+
+
+mix <- seq(1,10, length=100) %o% 10^-(3:7) %>% as.vector ##500 punti
+
+print("estimate fits")
+
+estimate_exp <- function(x, y=mix)
+{
+  m_exp = conexp$new(x)
+  print("exp")
+  est_xmin_exp = estimate_xmin(m_exp, xmins=y)
+  m_exp$setXmin(est_xmin_exp)
+  est_pars_exp = estimate_pars(m_exp)
+  m_exp$setPars(est_pars_exp)
+  return(m_exp)
+}
+
+estimate_lno <- function(x, y=mix)
+{
+  out = conlnorm$new(x)
+  xmin <- tryCatch(
+    {
+      estimate_xmin(out, xmins = y)
+    },
+    error = function(cond) {
+      message("something went wrong.")
+      message(cond)
+      return(NA)
+    })
+  if (is.na(xmin)){
+    return(xmin)
+  } else {
+    out$setXmin(xmin)
+    est_pars_lno = estimate_pars(out)
+    out$setPars(est_pars_lno)
+    return(out)
+  }
+}
+
+
+estimate_pl <-  function(x, y=mix)
+{
+  m_pl = conpl$new(x)
+  est_xmin_pl = estimate_xmin(m_pl, xmins=y)
+  m_pl$setXmin(est_xmin_pl)
+  est_pars_pl = estimate_pars(m_pl)
+  m_pl$setPars(est_pars_pl)
+  return(m_pl)
+}
+
+
+
+b <- metab2 %>%
+  group_by(St.label) %>%
+  nest() %>%
+  ungroup() %>%
+  arrange(St.label) %>%
+  mutate(m_exp = map(data, ~ estimate_exp (.x$relab, y=mix)),
+         m_lno = map(data, ~ estimate_lno (.x$relab, y=mix)),
+         m_pl = map(data, ~ estimate_pl (.x$relab, y=mix)))
+
+
+print("save fits")
+
+save(b,file="fits_all_stations_explno_vector500_metaB_richness.RData")
+```
+
+<br>
+
+2. Plot fits
+
+```{r eval=FALSE}
+library(tidyverse)
+library(data.table)
+library(poweRlaw)
+
+
+load("fits_all_stations_explno_vector500_metaB_richness.RData")
+
+
+make_plots <- function(x)
+{
+  plot(d$m_exp[[x]], main=paste0("Station: ", d$St.label[[x]], "; ", d$richness[[x]], " OTUs"))
+  lines(d$m_exp[[x]], col=2, lwd=4)
+  lines(d$m_pl[[x]],  col=3, lwd=4)
+  text(5e-2,0.1,     labels="exp", col =2)
+  text(5e-2,0.9,     labels="power", col =3)
+tryCatch (
+    {
+      lines(d$m_lno[[x]], col=4, lwd=4)
+      text(5e-2,0.3,     labels="lognorm", col =4)
+      return("ok")
+    },
+    error = function(cond)
+    {
+      message("something went wrong.")
+      message(cond)
+      return(NA)
+    })
+}
+
+pdf("plots_all_stations_explno_vector500_metaB_richness.pdf")
+lapply(seq_len(nrow(d)), make_plots)
+dev.off()
+```
+
+![Fits_metaB](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/outputs/Per_Station/Fits/metaB/plots_all_stations_explno_vector500_metaB_richness_arranged_type_p.pdf){width=100% height=700}
+
+<br>
+
+3. Extract xmins and pars
+
+```{r eval=FALSE}
+library(data.table)
+library(poweRlaw)
+library(tidyverse)
+
+load("fits_all_stations_explno_vector500_metaB_richness.RData")
+
+###1) Extract xmins
+
+extract_mins_all <- function(x)
+{
+  unlisted_exp = unlist(b$m_exp[[x]])
+  xmin_exp = unlisted_exp$xmin
+  
+  unlisted_pl = unlist(b$m_pl[[x]])
+  xmin_pl = unlisted_pl$xmin
+  
+  unlisted_lno = unlist(b$m_lno[[x]])
+  xmin_lno <- tryCatch(
+    {
+      unlisted_lno$xmin
+    },
+    error = function(cond) 
+    {
+      message("something went wrong.")
+      message(cond)
+      return(NA)
+    })
+  if(is.na(xmin_lno))
+  {
+    return(xmin_lno)
+  }
+  else
+  {
+    m <- as.matrix(c("xmin_exp" = xmin_exp, "xmin_pl" = xmin_pl, "xmin_lno" = xmin_lno))
+    d <- as.data.frame(m)
+    colnames(d) <-paste0("St.", b$St.label[[x]])
+    return(d)
+  }
+}
+
+mins <- lapply(seq_len(nrow(b)), extract_mins_all)
+
+d <- data.frame(lapply(mins, c))
+rownames(d) <- c("xmin_exp", "xmin_pl", "xmin_lno")
+
+save(d,file="xmins_all_stations_explno_vector500_metaB.RData")
+
+###2) extract parameters
+
+extract_pars_all <- function(x)
+{
+  unlisted_exp = unlist(b$m_exp[[x]])
+  pars_exp = unlisted_exp$pars
+  
+  unlisted_pl = unlist(b$m_pl[[x]])
+  pars_pl = unlisted_pl$pars
+  
+  unlisted_lno = unlist(b$m_lno[[x]])
+  pars_lno <- tryCatch(
+    {
+      unlisted_lno$pars
+    },
+    error = function(cond) 
+    {
+      message("something went wrong.")
+      message(cond)
+      return(NA)
+    })
+  if(is.na(pars_lno))
+  {
+    return(pars_lno)
+  }
+  else
+  {
+    m <- as.matrix(c("pars_exp" = pars_exp, "pars_pl" = pars_pl, "pars_lno" = pars_lno))
+    d <- as.data.frame(m)
+    colnames(d) <-paste0("St.", b$St.label[[x]])
+    return(d)
+  }
+}
+
+parss <- lapply(seq_len(nrow(b)), extract_pars_all)
+d_pars <- as.data.frame(parss)
+
+save(d_pars,file="pars_all_stations_explno_vector500_metaB.RData")
+```
+
+
+4. Plot xmins per station
+
+```{r eval=FALSE}
+setwd("C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/fit_per_station/metaB")
+
+library(tidyverse)
+library(data.table)
+library(poweRlaw)
+library(ggplot2)
+library(ggrepel)
+
+list.files(pattern = ".RData$")
+
+############################ x mins ############################
+load("xmins_all_stations_explno_vector500_metaB.RData")
+
+###xmins per station
+##a.
+pdf("metaB_xmins_per_station.pdf", width = 8.5)
+as.data.frame(t(d)) %>%
+  rename(exponential = xmin_exp,
+         powerlaw = xmin_pl,
+         lognormal = xmin_lno) %>% 
+  rownames_to_column("St.label") %>% 
+  gather(Distribution, value, -St.label) %>% 
+  arrange(St.label) %>% 
+  filter(!is.na(value)) %>% 
+  mutate(St.label = substr(St.label, 4,6)) %>% 
+  ggplot() +
+  geom_point(aes(x=St.label, y=value, col=Distribution),
+             size=2.5) +
+  scale_color_manual(values = c("red", "blue", "green")) +
+  scale_y_log10() +
+  theme_minimal() +
+  ylab("xmin") +
+  theme(axis.text.x=element_text(angle=50, size=7, vjust=0.5)) +
+  ggtitle("Diatoms, metaB, 20-180, SUR",
+          subtitle = "xmins; ylog")
+dev.off()
+```
+
+
+![xmins_station_metaB](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/outputs/Per_Station/Fits/metaB/metaB_xmins_per_station.pdf){width=100% height=600}
+
+<br>
+
+5. Plot xmins per richness
+
+```{r eval=FALSE}
+###xmins per richness
+metab <- read.delim(file="C:/Users/Userszn/Google Drive/PhD/TARA_Data/metab/all_taxa/dia.txt",
+                     sep = ",", stringsAsFactors = F) %>% 
+  select(contains("_"), cid) %>%
+  column_to_rownames("cid")
+
+dat_samp <- read.delim("~/PhD/TARA_Data/dat_samp.txt") %>% 
+  select(Sample.id, Depth, Fraction.size, Station.label,
+         Latitude, Longitude, Temperature, Marine.biome, Ocean.region) %>% 
+  filter(Depth == "SRF", Fraction.size == "20-180")
+
+
+##filter metab
+metab_richness <- metab[,names(metab)%in%dat_samp$Sample.id] %>%
+  rownames_to_column("cid") %>%
+  gather (Sample.id, values, -cid) %>% 
+  merge(dat_samp) %>% 
+  filter(values >0) %>% 
+  group_by(Station.label) %>% 
+  summarise(n_distinct(cid)) %>% 
+  rename(St.label = Station.label) %>% 
+  mutate(St.label = substr(St.label, 6, 8)) %>% 
+  rename(richness = "n_distinct(cid)")
+  
+
+
+pdf("metaB_xmins_per_richness.pdf", width = 8.5)
+as.data.frame(t(d)) %>%
+  rename(exponential = xmin_exp,
+         powerlaw = xmin_pl,
+         lognormal = xmin_lno) %>% 
+  rownames_to_column("St.label") %>% 
+  gather(Distribution, value, -St.label) %>% 
+  arrange(St.label) %>% 
+  filter(!is.na(value)) %>% 
+  mutate(St.label= substr(St.label, 4,6)) %>%
+  inner_join(metab_richness) %>% 
+  ggplot() +
+  geom_point(aes(x=richness, y=value, col=Distribution),
+             size=2.5) +
+  scale_color_manual(values = c("red", "blue", "green")) +
+  scale_y_log10() +
+  scale_x_log10() +
+  theme_minimal() +
+  ylab("xmin") +
+  #theme(axis.text.x=element_text(angle=50, size=7, vjust=0.5)) +
+  ggtitle("Diatoms, metaB, 20-180, SUR",
+          subtitle = "xmins; xylog") +
+  facet_wrap(~Distribution, scales = "free")
+dev.off()
+```
+
+![xmins_richness_metaB](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/outputs/Per_Station/Fits/metaB/metaB_xmins_per_richness.pdf){width=100% height=600}
+
+<br>
+<br>
+<br>
+
+6. Plot pars per station
+
+```{r eval=FALSE}
+############################ pars ############################
+load("pars_all_stations_explno_vector500_metaB.RData")
+
+##pars per station
+pdf("metaB_pars_per_station.pdf", width = 8.5)
+as.data.frame(t(d_pars)) %>% 
+  na.omit(f) %>%  
+  rownames_to_column("St.label") %>% 
+  select(-c(pars_lno2)) %>% 
+  mutate(pars_lno1 = abs(pars_lno1),
+         St.label= substr(St.label, 4,6)) %>%
+  mutate(St.label = sprintf("%03d", as.numeric(St.label))) %>%
+  rename(exponential_lambda = pars_exp,
+         lognormal_mu = pars_lno1,
+         powerlaw_alpha = pars_pl) %>% 
+  gather(Par, value, -St.label) %>% 
+  arrange(St.label) %>% 
+  filter(!is.na(value)) %>% 
+  ggplot() +
+  geom_point(aes(x=St.label, y=value, col=Par),
+             size=2.5) +
+  scale_color_manual(values = c("red", "blue", "green")) +
+  scale_y_log10() +
+  theme_minimal() +
+  theme(axis.text.x=element_text(angle=50, size=7, vjust=0.5)) +
+  ggtitle("Diatoms, metaB, 20-180, SUR",
+          subtitle = "parameters; ylog")
+dev.off()
+```
+
+![pars_station_metaB](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/outputs/Per_Station/Fits/metaB/metaB_pars_per_station.pdf){width=100% height=600}
+
+<br>
+
+7. Plot pars per richness
+
+```{r eval=FALSE}
+###pars per richness
+pdf("metaB_pars_per_richness.pdf", width = 8.5)
+as.data.frame(t(d_pars)) %>% 
+  na.omit(f) %>%  
+  rownames_to_column("St.label") %>% 
+  select(-c(pars_lno2)) %>% 
+  mutate(pars_lno1 = abs(pars_lno1),
+         St.label= substr(St.label, 4,6)) %>%
+  mutate(St.label = sprintf("%03d", as.numeric(St.label))) %>%
+  rename(exponential_lambda = pars_exp,
+         lognormal_mu = pars_lno1,
+         powerlaw_alpha = pars_pl) %>% 
+  gather(Par, value, -St.label) %>% 
+  arrange(St.label) %>% 
+  filter(!is.na(value)) %>% 
+  inner_join(metab_richness) %>% 
+  ggplot() +
+  geom_point(aes(x=richness, y=value, col=Par),
+             size=2.5) +
+  scale_color_manual(values = c("red", "blue", "green")) +
+  scale_y_log10() +
+  scale_x_log10() +
+  theme_minimal() +
+  #theme(axis.text.x=element_text(angle=50, size=7, vjust=0.5)) +
+  ggtitle("Diatoms, metaB, 20-180, SUR",
+          subtitle = "parameters; xylog") +
+  facet_wrap(~Par, scales = "free") 
+dev.off()
+```
+
+![pars_richness_metaB](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/outputs/Per_Station/Fits/metaB/metaB_pars_per_richness.pdf){width=100% height=600}

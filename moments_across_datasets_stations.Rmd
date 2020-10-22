@@ -9,8 +9,9 @@ output:
     self_contained: true
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+```{r import, include=F}
+knitr::opts_chunk$set(message = F, error = F, warning = F, echo = F,
+                          cache = T)
 ```
 
 <style>
@@ -66,20 +67,23 @@ value type | rel.ab (sum per st=1)| rel.ab (RPKM+dia) | rel.ab(RPKM+dia)   | CPM
 
 How can we address whether the variability we observe between sampling stations is due to a real biological signal or to background noise/technical biases?
 
-#### Within Datasets
 
-1. Richness
-```{r warning=FALSE, message=FALSE, cache=TRUE}
+
+### 1. Richness{.tabset}
+
+#### metaB
+
+```{r a1}
 library(tidyverse)
 library(data.table)
 library(e1071)
 library(readxl)
 
-setwd("C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/moments_genes")
+#### metaB barv2016202_swarm_d1_t100.txt <- swarm di Greta
 
 #metab
-metab <- fread("C:/Users/Userszn/Google Drive/PhD/TARA_Data/metaB/diatoms/barv2016202_swarm_d1_t100.txt", 
-               sep = " ", stringsAsFactors = F) 
+metab <- fread("C:/Users/Userszn/Documents/PhD/TARA_Data/metaB/diatoms/barv2016202_swarm_d1_t100.txt", 
+               sep = " ", stringsAsFactors = F)
 
 
 metab1 <- metab %>% 
@@ -95,41 +99,304 @@ metabrelab <- metab1 %>%
   ungroup
 
 
-metabrelab %>% 
+metab_richness <- metabrelab %>% 
   group_by(St.label) %>% 
-  summarise(sum(relab))
+  summarise(n_otus = n_distinct(OTU)) %>% 
+  ungroup
 
+metab_richness_table <-metab_richness %>% 
+  select(n_otus) %>% 
+  rename("n of OTUs" = n_otus) %>% 
+  summary()
+
+metab_richness %>% 
+  ggplot() +
+  aes(x = n_otus) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 100, 
+                 color = "grey30", 
+                 fill = "white") +
+  geom_density(alpha = .2, fill = "antiquewhite3") +
+  xlab("n of OTUs") +
+  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
+  theme_bw() +
+  ggtitle(paste0("Station richness; ", n_distinct(metab_richness$St.label), " stations"),
+          subtitle = "metaB, Diatoms; 20-180um, SUR") +
+  annotation_custom(gridExtra::tableGrob(metab_richness_table), xmin=400, xmax=500, 
+                    ymin=0.002, ymax=0.004)
+```
+
+
+```{r eval=FALSE}
+library(tidyverse)
+library(data.table)
+library(e1071)
+library(readxl)
+
+#### metaB data drom N.Henry/F.Ibalbarz
+
+
+metab.tot <- fread("C:/Users/Userszn/Documents/PhD/TARA_Data/metaB/all_taxa/globaldataset.otus.v20171106.withfunctions", sep = "\t", stringsAsFactors = F)
+
+metab.dia <- metab.tot %>% 
+  filter(grepl("Bacillariophyta", lineage))
+
+env <- fread("C:/Users/Userszn/Documents/PhD/TARA_Data/metab-env.from.N.Henry.byFederico/TARA_CONTEXT_95_SEQ_STATIONS_V9_v2.txt")
+
+env.20180sur <- env[,-22] %>% 
+  filter(Depth == "SRF",
+         Fraction.size == "20-180") %>% 
+  rename(St.label = Station.label) %>% 
+  select(Sample.id, St.label)
+
+metab.dia1 <- metab.dia %>% 
+  pivot_longer(BV9_1:TV9_99) %>% 
+  rename(OTU = cid, Sample.id = name) %>% 
+  select(OTU, Sample.id, value) %>% 
+  filter(value > 0)
+
+metab.dia.final <- metab.dia1 %>% 
+  inner_join(env.20180sur, by = "Sample.id") %>% 
+  select(OTU, St.label, value)
+
+metabrelab <- metab.dia.final %>% 
+  group_by(St.label) %>% 
+  mutate(relab = value/sum(value)) %>% 
+  ungroup
+
+
+save(metabrelab, file = "C:/Users/Userszn/Documents/PhD/TARA_Data/metab-env.from.N.Henry.byFederico/metabrelab.RData")
+```
+
+
+```{r eval=FALSE}
+
+load("C:/Users/Userszn/Documents/PhD/TARA_Data/metab-env.from.N.Henry.byFederico/metabrelab.RData")
 metab_richness <- metabrelab %>% 
   group_by(St.label) %>% 
   summarise(n_otus = n_distinct(OTU))
 
+metab_richness_table <-metab_richness %>% 
+  select(n_otus) %>% 
+  rename("n of OTUs" = n_otus) %>% 
+  summary()
+
 metab_richness %>% 
-  #filter(ubiquity >=20) %>% 
   ggplot() +
-  aes(x=n_otus) +
-  geom_histogram(bins = 100) +
+  aes(x = n_otus) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 100, 
+                 color = "grey30", 
+                 fill = "white") +
+  geom_density(alpha = .2, fill = "antiquewhite3") +
   xlab("n of OTUs") +
   #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
   theme_bw() +
-  ggtitle("Station richness",
-          subtitle = "metaB, Diatoms; 20-180um, SUR")
+  ggtitle(paste0("Station richness; ", n_distinct(metab_richness$St.label), " stations"),
+          subtitle = "metaB, Diatoms; 20-180um, SUR") +
+  annotation_custom(gridExtra::tableGrob(metab_richness_table), xmin=500, xmax=700, 
+                    ymin=0.002, ymax=0.004)
 ```
-<div class="column-left">
-![metag_richness](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/moments_genes/metag_richness.png){width=100% height=400}
-</div><div class="column-right">
-![metat_richness](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/moments_genes/metat_richness.png){width=100% height=400}
-</div>
 
-<br>
 
-<br>
+#### metaG
 
-<br>
+```{r a2}
+metag <- fread("C:/Users/Userszn/Documents/PhD/TARA_Data/metaG/diatoms/metaG_diatoms_QQSS_SUR_norm_v2.ssv", sep = ",", header = F) %>%
+  separate(V2, into = c("value", "St.label"), sep = "\\s") %>% 
+  rename(geneid = V1) %>% 
+  mutate(St.label = sprintf("%03d",as.numeric(St.label)),
+         value = as.numeric(value),
+         geneid = as.character(geneid))
 
-2. Relation between moments in metaB
+metag_richness <- metag %>% 
+  group_by(St.label) %>% 
+  summarise(n_genes = n_distinct(geneid)) %>% 
+  ungroup()
 
-<div class="column-left">
-```{r warning=FALSE, message=FALSE, cache=TRUE}
+
+metag_richness_table <-metag_richness %>% 
+  select(n_genes) %>% 
+  summary()
+
+metag_richness %>% 
+  ggplot() +
+  aes(x = n_genes) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 100, 
+                 color = "grey30", 
+                 fill = "white") +
+  geom_density(alpha = .2, fill = "antiquewhite3") +
+  xlab("n of unigenes") +
+  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
+  theme_bw() +
+  ggtitle(paste0("Station richness; ", n_distinct(metag_richness$St.label), " stations"),
+          subtitle = "metaG, Diatoms; 20-180um, SUR") +
+  annotation_custom(gridExtra::tableGrob(metag_richness_table), xmin=2e+05, xmax=3e+05, 
+                    ymin=1e-05, ymax=2.5e-05)
+
+```
+
+#### metaT 
+
+```{r a3}
+metat <- fread("C:/Users/Userszn/Documents/PhD/TARA_Data/metaT/diatoms/metaT_diatoms_QQSS_SUR_norm_v2.ssv", sep = ",", header = F) %>% 
+  separate(V2, into = c("value", "St.label"), sep = "\\s") %>% 
+  rename(geneid = V1) %>% 
+  mutate(St.label = sprintf("%03d",as.numeric(St.label)),
+         value = as.numeric(value),
+         geneid = as.character(geneid))
+
+metat_richness <- metat %>% 
+  group_by(St.label) %>% 
+  summarise(n_genes = n_distinct(geneid)) %>% 
+  ungroup()
+
+
+metat_richness_table <-metat_richness %>% 
+  select(n_genes) %>% 
+  summary()
+
+
+metat_richness %>% 
+  ggplot() +
+  aes(x = n_genes) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 100, 
+                 color = "grey30", 
+                 fill = "white") +
+  geom_density(alpha = .2, fill = "antiquewhite3") +
+  xlab("n of unigenes") +
+  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
+  theme_bw() +
+  ggtitle(paste0("Station richness; ", n_distinct(metat_richness$St.label), " stations"),
+          subtitle = "metaT, Diatoms; 20-180um, SUR") +
+  annotation_custom(gridExtra::tableGrob(metat_richness_table), xmin=3e+05, xmax=4e+05, 
+                    ymin=4e-06, ymax=1e-05)
+```
+
+
+#### P.mu
+```{r a4}
+
+#transcriptomics
+p.mu_ts <-read_xlsx("C:/Users/Userszn/Documents/PhD/script/Pseudonitzschia/Transcriptomics/Copy of all.annot.xlsx")
+p.mu_ts1 <- na.omit(p.mu_ts)
+
+p.mu_ts_richness <- p.mu_ts1 %>% 
+  pivot_longer(M2.4_CE:F50b_SL) %>% 
+  group_by(name) %>% 
+  summarise(n_genes = n_distinct(Row.names)) %>% 
+  ungroup()
+
+
+p.mu_ts_richness_table <- p.mu_ts_richness %>% 
+  select(n_genes) %>% 
+  summary()
+
+p.mu_ts_richness %>% 
+  ggplot() +
+  aes(x = n_genes) +
+  geom_histogram(aes(y = ..density..),
+                 bins = 100, 
+                 color = "grey30", 
+                 fill = "white") +
+  geom_density(alpha = .2, fill = "antiquewhite3") +
+  xlab("n of genes") +
+  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
+  theme_bw() +
+  ggtitle(paste0("Condition richness; ", n_distinct(p.mu_ts_richness$name), " conditions?"),
+          subtitle = "P. multistriata")  #+
+  #nnotation_custom(gridExtra::tableGrob(metag_richness_table), xmin=2e+05, xmax=3e+05, 
+            #        ymin=1e-05, ymax=2.5e-05)
+
+```
+
+
+### 2. RAD{.tabset}
+
+#### metaB
+
+```{r b1}
+metabrelab %>% 
+  group_by(St.label) %>% 
+  mutate(richness = n_distinct(OTU)) %>%
+  arrange(desc(relab)) %>%
+  mutate(Rank = seq_len(n()),
+         `log10 of % relative abundance` = log10(relab)) %>%
+  ungroup() %>% 
+  ggplot() +
+  aes(x = Rank, y = `log10 of % relative abundance`,
+      col = richness, group = St.label) +
+  geom_line(lwd = 0.5, alpha = 0.25) +
+  theme_bw() +
+  ggtitle("Whittaker (RAD) on diatom OTUs",
+          subtitle = "metaB, 20-180, SUR")
+
+
+```
+
+#### metaG
+
+```{r b2}
+metag %>%
+  group_by(St.label) %>%
+  mutate(richness = n_distinct(geneid)) %>%
+  arrange(desc(value)) %>%
+  mutate(Rank = seq_len(n()),
+         `log10 of % relative abundance` = log10(value)) %>%
+  ggplot() +
+  aes(x = Rank, y = `log10 of % relative abundance`,
+      col = richness, group = St.label) +
+  geom_line(lwd = 0.5, alpha = 0.25) +
+  theme_bw() +
+  ggtitle("Whittaker (RAD) on diatom unigenes",
+          subtitle = "metaG, 20-180, SUR")
+
+```
+
+#### metaT 
+
+```{r b3}
+metat %>%
+  group_by(St.label) %>%
+  mutate(richness = n_distinct(geneid)) %>%
+  arrange(desc(value)) %>%
+  mutate(Rank = seq_len(n()),
+         `log10 of % relative abundance` = log10(value)) %>%
+  ggplot() +
+  aes(x = Rank, y = `log10 of % relative abundance`,
+      col = richness, group = St.label) +
+  geom_line(lwd = 0.5, alpha = 0.25) +
+  theme_bw() +
+  ggtitle("Whittaker (RAD) on diatom unigenes",
+          subtitle = "metaT, 20-180, SUR")
+```
+
+#### P.multistriata 
+
+```{r b4}
+p.mu_ts1 %>% 
+  pivot_longer(M2.4_CE:F50b_SL) %>% 
+  group_by(name) %>%
+  mutate(richness = n_distinct(Row.names)) %>%
+  arrange(desc(value)) %>%
+  mutate(Rank = seq_len(n()),
+         `log10 of % relative abundance` = log10(value)) %>%
+  ggplot() +
+  aes(x = Rank, y = `log10 of % relative abundance`,
+      col = richness, group = name) +
+  geom_line(lwd = 0.5, alpha = 0.25) +
+  theme_bw() +
+  ggtitle("Whittaker (RAD) on P.multistriata transcriptomes",
+          subtitle = "20-180, SUR")
+```
+
+### 3. Relation between moments : mean-variance{.tabset}
+
+#### metaB
+
+```{r c1}
 moments_metab_stations <- metabrelab %>% 
   group_by(St.label) %>%
   summarise(mean = mean(relab),
@@ -148,63 +415,22 @@ moments_metab_stations %>%
   #geom_point(col = "gray", size = 1) +
   geom_point(aes(col = richness), size = 3) +
   scale_colour_viridis_c() + 
-  # geom_smooth(method = "lm", formula = y ~ x +  I(x^2)) +
+  #geom_smooth(method = "lm", formula = y ~ x +  I(x^2)) +
+  geom_smooth(method = "lm", formula = y ~ x) +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
   ggtitle(paste0("Mean and Variance; ",
                  n_distinct(moments_metab_stations$St.label), " stations"),
-          subtitle = ("metaB, diatoms, 20-180, SUR"))
+          subtitle = ("metaB, diatoms, 20-180, SUR")) +
+    labs(caption = "log-log")
+
 ```
-</div><div class="column-right">
-```{r warning=FALSE, message=FALSE, cache=TRUE}
-moments_metab_stations %>%
-  ggplot() + 
-  aes(x=skewness, y=kurtosis) + 
-  #geom_point(col= "gray", size = 1) +
-  geom_point(aes(col = richness), size = 3) +
-  scale_colour_viridis_c() + 
-  #geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
-  theme_bw() +
-  ggtitle(paste0("Skewness and Kurtosis; ",
-                 n_distinct(moments_metab_stations$St.label), " stations"),
-          subtitle = ("metaB, diatoms, 20-180, SUR"))
-```
-</div>
 
-<br>
+#### metaG
 
-3. Relation between moments in metaG
-```{r eval=FALSE}
-#falkor
-###metaG
-library(tidyverse)
-library(data.table)
-library(e1071)
-
-metag <- fread("metaG_diatoms_QQSS_SUR_norm_v2.ssv", sep = ",", header = F) %>% 
-  separate(V2, into = c("value", "St.label"), sep = "\\s") %>% 
-  rename(geneid = V1) %>% 
-  mutate(St.label = sprintf("%03d",as.numeric(St.label)),
-         value = as.numeric(value),
-         geneid = as.character(geneid))
-
-metag_richness <- metag %>% 
-  group_by(St.label) %>% 
-  summarise(n_genes = n_distinct(geneid))
-
-png("metag_richness.png")
-metag_richness %>% 
-  #filter(ubiquity >=20) %>% 
-  ggplot() +
-  aes(x=n_genes) +
-  geom_histogram(bins = 100) +
-  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
-  theme_bw() +
-  ggtitle("Station Richness",
-          subtitle = "metaG, Diatoms; 20-180um, SUR")
-dev.off()
-
+```{r c2}
+#load("moments_metag_stations.RData")
 
 moments_metag_stations <- metag %>%
   group_by(St.label) %>%
@@ -218,14 +444,6 @@ moments_metag_stations <- metag %>%
   mutate(logme = log10(mean), logvar = log10(variance),
          source = c("metag_tara"))
 
-save(moments_metag_stations, file= "moments_metag_stations.RData")
-
-```
-
-<div class="column-left">
-```{r warning=FALSE, message=FALSE, cache=TRUE}
-##falkor
-load("moments_metag_stations.RData")
 
 moments_metag_stations %>%
   ggplot() + 
@@ -233,63 +451,20 @@ moments_metag_stations %>%
   #geom_point(col = "gray", size = 1) +
   geom_point(aes(col=richness), size = 3) +
   scale_colour_viridis_c() +
-  #geom_smooth(method = "lm", formula = y ~ x +  I(x^2)) +
+  geom_smooth(method = "lm", formula = y ~ x) +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
   ggtitle(paste0("Mean and Variance; ",
                  n_distinct(moments_metag_stations$St.label), " stations"),
-          subtitle = ("metaG, diatoms, 20-180, SUR"))
+          subtitle = ("metaG, diatoms, 20-180, SUR")) +
+    labs(caption = "log-log")
 ```
-</div><div class="column-right">
-```{r warning=FALSE, message=FALSE, cache=TRUE}
 
-moments_metag_stations %>%
-  ggplot() + 
-  aes(x=skewness, y=kurtosis) + 
-  #geom_point(col = "gray", size = 3) +
-  geom_point(aes(col=richness), size=3) +
-  scale_color_viridis_c() +
-  # geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
-  theme_bw() +
-  ggtitle(paste0("Skewness and Kurtosis; ",
-                 n_distinct(moments_metag_stations$St.label), " stations"),
-          subtitle = ("metaG, diatoms, 20-180, SUR"))
-```
-</div>
 
-<br>
+#### metaT
 
-4. Relation between moments in metaT
-```{r eval=FALSE}
-###metaT
-#falkor
-library(tidyverse)
-library(data.table)
-library(e1071)
-
-metat <- fread("metaT_diatoms_QQSS_SUR_norm_v2.ssv", sep = ",", header = F) %>% 
-  separate(V2, into = c("value", "St.label"), sep = "\\s") %>% 
-  rename(geneid = V1) %>% 
-  mutate(St.label = sprintf("%03d",as.numeric(St.label)),
-         value = as.numeric(value),
-         geneid = as.character(geneid))
-
-metat_richness <- metat %>% 
-  group_by(St.label) %>% 
-  summarise(n_genes = n_distinct(geneid))
-
-png("metat_richness.png")
-metat_richness %>% 
-  #filter(ubiquity >=20) %>% 
-  ggplot() +
-  aes(x=n_genes) +
-  geom_histogram(bins = 100) +
-  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
-  theme_bw() +
-  ggtitle("Station Richness",
-          subtitle = "metaT, Diatoms; 20-180um, SUR")
-
+```{r c3}
 
 moments_metat_stations <- metat %>%
   group_by(St.label) %>%
@@ -303,15 +478,6 @@ moments_metat_stations <- metat %>%
   mutate(logme = log10(mean), logvar = log10(variance),
          source = c("metat_tara"))
 
-save(moments_metat_stations, file = "moments_metat_stations.RData")
-```
-
-
-<br>
-
-<div class="column-left">
-```{r warning=FALSE, message=FALSE, cache=TRUE}
-load("moments_metat_stations.RData")
 
 moments_metat_stations %>%
   ggplot() + 
@@ -319,38 +485,245 @@ moments_metat_stations %>%
   #geom_point(col = "gray", size = 1) +
   geom_point(aes(col=richness), size=3) +
   scale_color_viridis_c() +
-  # geom_smooth(method = "lm", formula = y ~ x +  I(x^2)) +
+  geom_smooth(method = "lm", formula = y ~ x) +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
   ggtitle(paste0("Mean and Variance; ",
                  n_distinct(moments_metat_stations$St.label), " stations"),
-          subtitle = ("metaT, diatoms, 20-180, SUR"))
+          subtitle = ("metaT, diatoms, 20-180, SUR")) +
+    labs(caption = "log-log")
 ```
 
-</div><div class="column-right">
-```{r warning=FALSE, message=FALSE, cache=TRUE}
+#### P.multistriata
+
+```{r c4}
+
+moments_p.mu_conditions <- p.mu_ts1 %>%
+  pivot_longer(M2.4_CE:F50b_SL) %>%
+  group_by(name) %>%
+  summarise(mean = mean(value),
+            median = median(value),
+            variance = var(value),
+            IQR = IQR(value),
+            skewness = skewness(value),
+            kurtosis = kurtosis(value),
+            richness = n_distinct(Row.names)) %>%
+  mutate(logme = log10(mean), logvar = log10(variance),
+         source = c("p.mu"))
+
+
+moments_p.mu_conditions %>%
+  ggplot() + 
+  aes(x=mean, y=variance) + 
+  #geom_point(col = "gray", size = 1) +
+  geom_point(aes(col=richness), size=3) +
+  scale_color_viridis_c() +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  theme_bw() +
+  scale_x_log10() +
+  scale_y_log10() +
+  ggtitle(paste0("Mean and Variance; ",
+                 n_distinct(moments_p.mu_conditions$name), " conditions"),
+          subtitle = ("P.multistriata transcriptomes")) +
+    labs(caption = "log-log")
+```
+
+#### all (TARA)
+
+```{r c5}
+moments_metaBrelGT_stations <- rbind(moments_metab_stations,
+      moments_metag_stations,
+      moments_metat_stations)
+
+
+#moments_between_data <- moments_metaBrelGT_stations %>%
+#  group_by(St.label) %>% 
+#  mutate( datashared = n_distinct(source)) %>% 
+#  ungroup() %>% 
+#  filter(datashared == 3) %>% 
+#  select(St.label, richness, mean, 
+#         median, variance, IQR, source) %>% 
+#  pivot_longer(richness:IQR) %>% 
+#  select(St.label, name, value, source) %>% 
+#  group_by(name) %>% 
+#  nest() %>% 
+#  ungroup %>% 
+#  mutate(roba = map(data, ~spread(.x, source,value)))
+##metaB vs metaG
+#metaB_vs_metaG <- moments_between_data %>% 
+#  mutate(plot = map2(roba, name, ~ ggplot(data = .x) +
+#                       aes(x=metab_tara, 
+#                           y=metag_tara) +
+#                       geom_point() +
+#                       scale_x_log10() +
+#                       scale_y_log10() + 
+#                       theme_bw() +
+#           ggtitle(paste0(.y), subtitle = "xylog")))
+#ggsave(file="metaB_vs_metaG.pdf", width = 11, 
+#       gridExtra::marrangeGrob(grobs = metaB_vs_metaG$plot,  nrow=2, ncol=3, 
+#                   top = "metaB and metaG"))
+```
+
+
+```{r c6}
+moments_metaBrelGT_stations %>%
+  ggplot() +
+  aes(x=mean, y=variance) +
+  geom_point(aes(col = source), size = 3, alpha = .5) +
+  geom_smooth(method = "lm", formula = y ~ x) +
+  theme_bw() +
+  scale_x_log10() +
+  scale_y_log10() + 
+  ggtitle("Mean and Variance",
+          subtitle = "All datasets")  +
+  guides(colour = guide_legend(override.aes = list(size=3))) +
+    labs(caption = "log-log")
+```
+
+
+
+### 4. Q-Q plots{.tabset}
+
+#### Original
+
+```{r d1}
+
+###plot coi valori originali:
+
+b.means <- moments_metaBrelGT_stations %>% 
+  filter(source == "metab_tara") %>% 
+  pull(mean)
+
+g.means <- moments_metaBrelGT_stations %>% 
+  filter(source=="metag_tara") %>% pull(mean)
+
+t.means <- moments_metaBrelGT_stations %>% 
+  filter(source=="metat_tara") %>% 
+  pull(mean)
+
+
+par(mfrow=c(1,3))
+qqplot(b.means,g.means, log="xy", main = "metab metag", xlim = c(2e-06, 0.2))
+abline(coef = c(0,1))
+qqplot(b.means, t.means, log="xy", main = "metab metat", xlim = c(1e-06, 0.2))
+abline(coef = c(0,1))
+qqplot(g.means,t.means, log="xy", main = "metag metat")
+abline(coef = c(0,1))
+```
+
+
+#### Transformed
+
+```{r d2}
+###con modifiche:
+b.means_minus_mult <- moments_metaBrelGT_stations %>% 
+  filter(source=="metab_tara") %>% 
+  mutate(mean_plus = (mean - 0.003) *0.004) %>% 
+  pull(mean_plus)
+
+t.means_2.5times <- moments_metaBrelGT_stations %>% 
+  filter(source=="metat_tara") %>% 
+  mutate(mean_multiplied = mean *2.5) %>% 
+  pull(mean_multiplied)
+
+
+
+par(mfrow=c(1,3))
+
+qqplot(b.means_minus_mult,g.means, log="xy", main = "metab metag")
+abline(coef = c(0,1))
+qqplot(b.means_minus_mult,t.means_2.5times, log="xy", main = "metab metat")
+abline(coef = c(0,1))
+qqplot(g.means, t.means_2.5times, log="xy", main = "metag metat")
+abline( c(0,1))
+
+
+
+moments_metaBrelGT_stations %>% 
+  #filter(source %in% c("metag_tara", "metat_tara")) %>% 
+  mutate(mean2 = case_when(source == "metat_tara" ~ mean*2.5,
+                           source == "metab_tara" ~ (mean - 0.003) *0.004,
+                           TRUE ~ mean)) %>% 
+  ggplot() +
+  aes(x=mean2, fill=source) +
+  geom_density(alpha= 0.2) +
+  scale_x_log10() +
+  geom_rug(aes(col = source)) +
+  theme_bw() +
+  xlab("mean")
+```
+
+
+
+
+<br>
+
+### 5. Relation between moments : skewness-kurtosis{.tabset}
+
+#### metaB
+```{r e1}
+moments_metab_stations %>%
+  ggplot() + 
+  aes(x=skewness, y=kurtosis) + 
+  #geom_point(col= "gray", size = 1) +
+  geom_point(aes(col = richness), size = 3) +
+  scale_colour_viridis_c() + 
+  geom_smooth(method = lm, formula = y~poly(x,2)) +
+  #geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
+  theme_bw() +
+  ggtitle(paste0("Skewness and Kurtosis; ",
+                 n_distinct(moments_metab_stations$St.label), " stations"),
+          subtitle = ("metaB, diatoms, 20-180, SUR"))
+```
+
+
+#### metaG
+
+```{r e2}
+
+moments_metag_stations %>%
+  ggplot() + 
+  aes(x=skewness, y=kurtosis) + 
+  #geom_point(col = "gray", size = 3) +
+  geom_point(aes(col=richness), size=3) +
+  scale_color_viridis_c() +
+  geom_smooth(method = lm, formula = y~poly(x,2)) +
+  # geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
+  theme_bw() +
+  ggtitle(paste0("Skewness and Kurtosis; ",
+                 n_distinct(moments_metag_stations$St.label), " stations"),
+          subtitle = ("metaG, diatoms, 20-180, SUR"))
+```
+
+#### metaT
+
+```{r e3}
 moments_metat_stations %>%
   ggplot() + 
   aes(x=skewness, y=kurtosis) + 
  # geom_point(col = "gray", size = 1) +
   geom_point(aes(col=richness), size = 3) +
   scale_color_viridis_c() +
+  geom_smooth(method = lm, formula = y~poly(x,2)) +
   #  geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metat_stations$St.label), " stations"),
           subtitle = ("metaT, diatoms, 20-180, SUR"))
 ```
-</div>
 
 
-<br>
 
-5. Relation between moments in P.multistriata Transcriptomes
-```{r warning=FALSE, message=FALSE, cache=TRUE}
+#### P. multistriata
+
+```{r e4}
+
+#### Transcriptomes P.multistriata
+
+library(readxl)
 #transcriptomics
-p.mu_ts <-read_xlsx("C:/Users/Userszn/Google Drive/PhD/script/Pseudonitzschia/Transcriptomics/Copy of all.annot.xlsx")
+p.mu_ts <-read_xlsx("C:/Users/Userszn/Documents/PhD/script/Pseudonitzschia/Transcriptomics/Copy of all.annot.xlsx")
 p.mu_ts1 <- na.omit(p.mu_ts)
 
 moments_pn <- p.mu_ts1 %>%
@@ -365,14 +738,12 @@ moments_pn <- p.mu_ts1 %>%
          logvar = log10(variance), 
          source=c("p.multistriata"))
 
-```
 
-
-```{r warning=FALSE, message=FALSE, cache=TRUE}
 moments_pn %>%
-  ggplot() + 
+  ggplot() +
   aes(x=skewness, y=kurtosis) + 
   geom_point(col = "gray", size = 3) +
+  geom_smooth(method = lm, formula = y~poly(x,2)) +
   #  geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
@@ -381,164 +752,120 @@ moments_pn %>%
 ```
 
 
-<br>
+#### all
 
-<br>
+```{r e5}
 
-#### Among Datasets
-
-metaB metaG metaT comparison:
-```{r eval=FALSE}
-moments_between_data <- moments_metaBrelGT_stations %>%
-  group_by(St.label) %>% 
-  mutate( datashared = n_distinct(source)) %>% 
-  ungroup() %>% 
-  filter(datashared == 3) %>% 
-  select(St.label, richness, mean, 
-         median, variance, IQR, source) %>% 
-  pivot_longer(richness:IQR) %>% 
-  select(St.label, name, value, source) %>% 
-  group_by(name) %>% 
-  nest() %>% 
-  ungroup %>% 
-  mutate(roba = map(data, ~spread(.x, source,value)))
-
-
-#metaB vs metaG
-metaB_vs_metaG <- prova %>% 
-  mutate(plot = map2(roba, name, ~ ggplot(data = .x) +
-                       aes(x=metab_tara, 
-                           y=metag_tara) +
-                       geom_point() +
-                       scale_x_log10() +
-                       scale_y_log10() + 
-                       theme_bw() +
-           ggtitle(paste0(.y), subtitle = "xylog")))
-
-
-ggsave(file="metaB_vs_metaG.pdf", width = 11, 
-       marrangeGrob(grobs = metaB_vs_metaG$plot,  nrow=2, ncol=3, 
-                    top = "metaB and metaG"))
-
-
-
-#metaB vs metaT
-metaB_vs_metaT <- prova %>% 
-  mutate(plot = map2(roba, name, ~ ggplot(data = .x) +
-                       aes(x=metab_tara, 
-                           y=metat_tara) +
-                       geom_point() +
-                       scale_x_log10() +
-                       scale_y_log10() + 
-                       theme_bw() +
-                       ggtitle(paste0(.y), subtitle = "xylog")))
-
-
-ggsave(file="metaB_vs_metaT.pdf", width = 11, 
-       marrangeGrob(grobs = metaB_vs_metaT$plot,  nrow=2, ncol=3, 
-                    top = "metaB and metaT"))
-
-
-#metaB vs metaT
-metaG_vs_metaT <- prova %>% 
-  mutate(plot = map2(roba, name, ~ ggplot(data = .x) +
-                       aes(x=metag_tara, 
-                           y=metat_tara) +
-                       geom_point() +
-                       scale_x_log10() +
-                       scale_y_log10() + 
-                       theme_bw() +
-                       ggtitle(paste0(.y), subtitle = "xylog")))
-
-
-ggsave(file="metaG_vs_metaT.pdf", width = 11, 
-       marrangeGrob(grobs = metaG_vs_metaT$plot,  nrow=2, ncol=3, 
-                    top = "metaG and metaT"))
-
-```
-![metaB_vs_metaG](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/moments_genes/metaB_vs_metaG.pdf){width=100% height=400}
-
-![metaB_vs_metaT](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/moments_genes/metaB_vs_metaT.pdf){width=100% height=400}
-
-![metaG_vs_metaT](C:/Users/Userszn/Google Drive/PhD/script/metaB_metaG_metaT_cfrall/moments_genes/metaG_vs_metaT.pdf){width=100% height=400}
-
-
-<br>
-
-<br>
-
-
-<div class="column-left">
-```{r warning=FALSE, message=FALSE, cache=TRUE}
-moments_metab_stations <- moments_metab_stations %>% 
-  select(St.label, mean, variance, skewness, kurtosis, richness, logme,
-         logvar, source)
-
-moments_metaBrelGT_stations <- rbind(moments_metab_stations,
-      moments_metag_stations,
-      moments_metat_stations)
-
-moments_metaBrelGT_stations %>%
-  ggplot() +
-  aes(x=mean, y=variance) +
-  geom_point(aes(col = source), size = 3, alpha = .5) +
-  theme_bw() +
-  scale_x_log10() +
-  scale_y_log10() + 
-  ggtitle("Mean and Variance",
-          subtitle = "All datasets")  +
-  guides(colour = guide_legend(override.aes = list(size=3)))
-```
-</div><div class="column-right">
-```{r warning=FALSE, message=FALSE, cache=TRUE}
-
-moments_metaBrelGT_stations %>%
+moments_p.mu_conditions %>% 
+  rename(St.label = name) %>% 
+  rbind(moments_metaBrelGT_stations) %>%
   ggplot() +
   aes(x=skewness, y=kurtosis) +
   geom_point(aes(col = source), size = 3, alpha = .5) +
+  geom_smooth(method = lm, formula = y~poly(x,2)) +
   theme_bw() +
   ggtitle("Skewness and Kurtosis",
           subtitle = "All datasets")  +
   guides(colour = guide_legend(override.aes = list(size=3)))
 ```
-</div>
 
 
-- QQplots
+<br>
 
-```{r warning=FALSE, message=FALSE, cache=TRUE}
-b.means_minus_mult <- moments_metaBrelGT_stations %>% 
-  filter(source=="metab_tara") %>% 
-  mutate(mean_plus = (mean - 0.003) *0.004) %>% 
-  pull(mean_plus)
-  
-g.means <- moments_metaBrelGT_stations %>% 
-  filter(source=="metag_tara") %>% pull(mean)
-  
-  
-t.means_2.5times <- moments_metaBrelGT_stations %>% 
-  filter(source=="metat_tara") %>% 
-  mutate(mean_multiplied = mean *2.5) %>% 
-  pull(mean_multiplied)
+<br>
 
-par(mfrow=c(1,3))
+### Among Datasets{.tabset}
 
-qqplot(b.means_minus_mult,g.means, log="xy", main = "metab metag")
-abline(coef = c(0,1))
-qqplot(b.means_minus_mult,t.means_2.5times, log="xy", main = "metab metat")
-abline( c(0,1))
-qqplot(g.means, t.means_2.5times, log="xy", main = "metag metat")
-abline( c(0,1))
+#### metaB - metaG
 
-
-moments_metaBrelGT_stations %>% 
-  #filter(source %in% c("metag_tara", "metat_tara")) %>% 
-  mutate(mean2 = case_when(source == "metat_tara" ~ mean*2.5,
-                           source == "metab_tara" ~ (mean - 0.003) *0.004,
-                           TRUE ~ mean)) %>% 
+```{r f1}
+#metaB vs metaG
+moments_metaBrelGT_stations %>%
+  group_by(St.label) %>% 
+  mutate(datashared = n_distinct(source)) %>% 
+  ungroup() %>% 
+  filter(datashared == 3) %>% 
+  select(St.label, richness, mean, 
+         median, variance, IQR, source) %>% 
+  pivot_longer(richness:IQR) %>% 
+  pivot_wider(names_from = source, values_from = value) %>% 
   ggplot() +
-  geom_density(aes(x=mean2, fill=source), alpha= 0.2) +
+  aes(x=metab_tara, 
+      y=metag_tara) +
+  geom_point() +
   scale_x_log10() +
+  scale_y_log10() + 
   theme_bw() +
-  xlab("mean")
+  facet_wrap(~ name, scales = "free") +
+  ggtitle("metaB and metaG", subtitle = "xylog")
+
+#moments_metab_stations <- moments_metab_stations %>% 
+#  select(St.label, mean, variance, skewness, kurtosis, richness, logme,
+#         logvar, source)
+
+
 ```
+
+
+#### metaB - metaT
+
+```{r f2}
+#metaB vs metaT
+moments_metaBrelGT_stations %>%
+  group_by(St.label) %>% 
+  mutate(datashared = n_distinct(source)) %>% 
+  ungroup() %>% 
+  filter(datashared == 3) %>% 
+  select(St.label, richness, mean, 
+         median, variance, IQR, source) %>% 
+  pivot_longer(richness:IQR) %>% 
+  pivot_wider(names_from = source, values_from = value) %>% 
+  ggplot() +
+  aes(x=metab_tara, 
+      y=metat_tara) +
+  geom_point() +
+  scale_x_log10() +
+  scale_y_log10() + 
+  theme_bw() +
+  facet_wrap(~ name, scales = "free") +
+  ggtitle("metaB and metaT", subtitle = "xylog")
+
+```
+
+
+#### metaG - metaT
+
+```{r f3}
+#metaG vs metaT
+moments_metaBrelGT_stations %>%
+  group_by(St.label) %>% 
+  mutate(datashared = n_distinct(source)) %>% 
+  ungroup() %>% 
+  filter(datashared == 3) %>% 
+  select(St.label, richness, mean, 
+         median, variance, IQR, source) %>% 
+  pivot_longer(richness:IQR) %>% 
+  pivot_wider(names_from = source, values_from = value) %>% 
+  ggplot() +
+  aes(x=metag_tara, 
+      y=metat_tara) +
+  geom_point() +
+  scale_x_log10() +
+  scale_y_log10() + 
+  theme_bw() +
+  facet_wrap(~ name, scales = "free") +
+  ggtitle("metaG and metaT", subtitle = "xylog")
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
