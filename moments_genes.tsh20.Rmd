@@ -52,11 +52,12 @@ Transcriptomes of P. multistriata (Basu et al, 2017); normalization CPM (Counts 
 
 
 
-Feature    | metaB                | metaG             | metaT              | Transcriptome
----------- | -------------------- | ----------------- |------------------- | ----------------
-unit       | OTU                  | unigene           | trascribed unigene | transcribed gene
-condition  | sampling station     | sampling station  | sampling station   | cell
-value type | rel.ab (sum per st=1)| rel.ab (RPKM+dia) | rel.ab(RPKM+dia)   | CPM
+Feature       | metaB                | metaG             | metaT              | Transcriptome
+------------- | -------------------- | ----------------- |------------------- | ----------------
+unit          | OTU                  | unigene           | trascribed unigene | transcribed gene
+condition     | sampling station     | sampling station  | sampling station   | cell
+normalization | TSS                  | RPKM+TSS          | RPKM+TSS           | CPM
+value type    | rel.abundance        | rel.abundance     | rel. abundance     | rel. abundance
 
 
 <br>
