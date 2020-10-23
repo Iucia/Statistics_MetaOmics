@@ -475,7 +475,7 @@ all_data %>%
              label = paste("y = ", signif(lm.all.meanvar$coef[[1]],5), 
       "x +", signif(lm.all.meanvar$coef[[2]], 5),
       "\nAdj R2 = ", signif(summary(lm.all.meanvar)$adj.r.squared, 5),
-      "x +", signif(lm.metat.meanvar$coef[[2]], 5),
+      "x +", signif(lm.all.meanvar$coef[[2]], 5),
       " \nP < 2.2e-16"))
 
 
