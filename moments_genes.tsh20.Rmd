@@ -360,11 +360,7 @@ moments_pn %>%
           subtitle = ("Transcriptomes, P.multistriata")) +
    geom_label(aes(x = 0.01, y = 1e+06), hjust = 0,
              label = paste("y = ", signif(lm.pn.meanvar$coef[[1]],5), 
-<<<<<<< HEAD
       "x +", signif(lm.pn.meanvar$coef[[2]], 5),
-=======
-      "x +", signif(lm.metat.meanvar$coef[[2]], 5),
->>>>>>> 038e6c4b6181f6531ed81eb09c8723021265cd8d
       "\nAdj R2 = ", signif(summary(lm.pn.meanvar)$adj.r.squared, 5),
       " \nP < 2.2e-16"))
 ```
@@ -458,7 +454,6 @@ all_data %>%
   ggplot() + 
   aes(x=mean, y=variance) + 
   geom_point(aes(col = source), size = 0.5, alpha = .5) +
-  #  geom_smooth(method = "lm", formula = y ~ x +  I(x^2)) +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -477,15 +472,10 @@ all_data %>%
           subtitle = "All datasets")  +
   guides(colour = guide_legend(override.aes = list(size=3))) +
    geom_label(aes(x = 1e-01, y = 1e+06), hjust = 0,
-<<<<<<< HEAD
              label = paste("y = ", signif(lm.all.meanvar$coef[[1]],5), 
       "x +", signif(lm.all.meanvar$coef[[2]], 5),
       "\nAdj R2 = ", signif(summary(lm.all.meanvar)$adj.r.squared, 5),
-=======
-             label = paste("y = ", signif(lm.pn.meanvar$coef[[1]],5), 
       "x +", signif(lm.metat.meanvar$coef[[2]], 5),
-      "\nAdj R2 = ", signif(summary(lm.pn.meanvar)$adj.r.squared, 5),
->>>>>>> 038e6c4b6181f6531ed81eb09c8723021265cd8d
       " \nP < 2.2e-16"))
 
 
