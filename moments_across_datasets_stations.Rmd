@@ -190,7 +190,6 @@ metab_richness %>%
                  fill = "white") +
   geom_density(alpha = .2, fill = "antiquewhite3") +
   xlab("n of OTUs") +
-  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
   theme_bw() +
   ggtitle(paste0("Station richness; ", n_distinct(metab_richness$St.label), " stations"),
           subtitle = "metaB, Diatoms; 20-180um, SUR") +
@@ -228,7 +227,6 @@ metag_richness %>%
                  fill = "white") +
   geom_density(alpha = .2, fill = "antiquewhite3") +
   xlab("n of unigenes") +
-  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
   theme_bw() +
   ggtitle(paste0("Station richness; ", n_distinct(metag_richness$St.label), " stations"),
           subtitle = "metaG, Diatoms; 20-180um, SUR") +
@@ -267,7 +265,6 @@ metat_richness %>%
                  fill = "white") +
   geom_density(alpha = .2, fill = "antiquewhite3") +
   xlab("n of unigenes") +
-  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
   theme_bw() +
   ggtitle(paste0("Station richness; ", n_distinct(metat_richness$St.label), " stations"),
           subtitle = "metaT, Diatoms; 20-180um, SUR") +
@@ -281,6 +278,7 @@ metat_richness %>%
 
 #transcriptomics
 p.mu_ts <-read_xlsx("C:/Users/Userszn/Documents/PhD/script/Pseudonitzschia/Transcriptomics/Copy of all.annot.xlsx")
+
 p.mu_ts1 <- na.omit(p.mu_ts)
 
 p.mu_ts_richness <- p.mu_ts1 %>% 
@@ -303,7 +301,6 @@ p.mu_ts_richness %>%
                  fill = "white") +
   geom_density(alpha = .2, fill = "antiquewhite3") +
   xlab("n of genes") +
-  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
   theme_bw() +
   ggtitle(paste0("Condition richness; ", n_distinct(p.mu_ts_richness$name), " conditions?"),
           subtitle = "P. multistriata")  #+
@@ -412,11 +409,11 @@ moments_metab_stations <- metabrelab %>%
 moments_metab_stations %>%
   ggplot() + 
   aes(x=mean, y=variance) + 
-  #geom_point(col = "gray", size = 1) +
   geom_point(aes(col = richness), size = 3) +
   scale_colour_viridis_c() + 
-  #geom_smooth(method = "lm", formula = y ~ x +  I(x^2)) +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -452,6 +449,8 @@ moments_metag_stations %>%
   geom_point(aes(col=richness), size = 3) +
   scale_colour_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -482,10 +481,11 @@ moments_metat_stations <- metat %>%
 moments_metat_stations %>%
   ggplot() + 
   aes(x=mean, y=variance) + 
-  #geom_point(col = "gray", size = 1) +
   geom_point(aes(col=richness), size=3) +
   scale_color_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -520,6 +520,8 @@ moments_p.mu_conditions %>%
   geom_point(aes(col=richness), size=3) +
   scale_color_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -572,6 +574,8 @@ moments_metaBrelGT_stations %>%
   aes(x=mean, y=variance) +
   geom_point(aes(col = source), size = 3, alpha = .5) +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() + 
@@ -670,7 +674,8 @@ moments_metab_stations %>%
   geom_point(aes(col = richness), size = 3) +
   scale_colour_viridis_c() + 
   geom_smooth(method = lm, formula = y~poly(x,2)) +
-  #geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metab_stations$St.label), " stations"),
@@ -689,7 +694,8 @@ moments_metag_stations %>%
   geom_point(aes(col=richness), size=3) +
   scale_color_viridis_c() +
   geom_smooth(method = lm, formula = y~poly(x,2)) +
-  # geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metag_stations$St.label), " stations"),
@@ -702,11 +708,11 @@ moments_metag_stations %>%
 moments_metat_stations %>%
   ggplot() + 
   aes(x=skewness, y=kurtosis) + 
- # geom_point(col = "gray", size = 1) +
   geom_point(aes(col=richness), size = 3) +
   scale_color_viridis_c() +
   geom_smooth(method = lm, formula = y~poly(x,2)) +
-  #  geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metat_stations$St.label), " stations"),
@@ -744,7 +750,8 @@ moments_pn %>%
   aes(x=skewness, y=kurtosis) + 
   geom_point(col = "gray", size = 3) +
   geom_smooth(method = lm, formula = y~poly(x,2)) +
-  #  geom_smooth(method = "lm", formula = y ~ x + I(x^2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_pn$name), " cells"),
@@ -763,6 +770,8 @@ moments_p.mu_conditions %>%
   aes(x=skewness, y=kurtosis) +
   geom_point(aes(col = source), size = 3, alpha = .5) +
   geom_smooth(method = lm, formula = y~poly(x,2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle("Skewness and Kurtosis",
           subtitle = "All datasets")  +

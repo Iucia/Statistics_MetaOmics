@@ -236,6 +236,8 @@ moments_metab.tsh20_otus %>%
   geom_point(aes(col=n_stations), size = 0.5) +
   scale_colour_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -266,6 +268,8 @@ moments_metag.tsh20 %>%
   geom_point(aes(col=n_stations), size = 0.5) +
   scale_colour_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -294,6 +298,8 @@ moments_metat.tsh20 %>%
   geom_point(aes(col=n_stations), size = 0.5) +
   scale_colour_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -329,6 +335,8 @@ moments_pn %>%
   aes(x=mean, y=variance) + 
   geom_point(col = "gray", size = 0.1) +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -437,6 +445,8 @@ all_data %>%
                     ymin=log10(1e+03), 
                     ymax=log10(1e+07)) +
   geom_smooth(method = "lm", formula = y ~ x) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   ggtitle("Mean and Variance",
           subtitle = "All datasets")  +
   guides(colour = guide_legend(override.aes = list(size=3)))
@@ -456,6 +466,8 @@ moments_metab.tsh20_otus %>%
   geom_point(aes(col=n_stations), size = 0.5) +
   scale_colour_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metab.tsh20_otus$OTU), " OTUs"),
@@ -471,11 +483,12 @@ moments_metag.tsh20 %>%
   geom_point(aes(col=n_stations), size = 0.5) +
   scale_colour_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metag.tsh20$geneid), " unigenes"),
           subtitle = ("metaG, diatoms, 20-180, SUR"))
-dev.off()
 ```
 
 
@@ -488,11 +501,12 @@ moments_metat.tsh20 %>%
   geom_point(aes(col=n_stations), size = 0.5) +
   scale_colour_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metat.tsh20$geneid), " unigenes"),
           subtitle = ("metaT, diatoms, 20-180, SUR"))
-dev.off()
 ```
 
 
@@ -503,6 +517,8 @@ moments_pn %>%
   aes(x=skewness, y=kurtosis) + 
   geom_point(col = "gray", size = 0.1) +
   geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_pn$geneid), " genes"),
@@ -518,6 +534,8 @@ all_data %>%
   aes(x=skewness, y=kurtosis) + 
   geom_point(aes(col = source), size = .5, alpha = .3) +
   geom_smooth(method = "lm", formula = y ~ poly(x,2)) +
+  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
+  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   annotation_custom(tableGrob(counts, rows=NULL,
                               theme = ttheme_default(base_size = 8, 
