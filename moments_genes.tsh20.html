@@ -490,7 +490,14 @@ summary {
 <h4>Transcriptomics P.multistriata:</h4>
 <p>Transcriptomes of P. multistriata (Basu et al, 2017); normalization CPM (Counts Per Million).</p>
 <p><br></p>
-<table>
+<table style="width:100%;">
+<colgroup>
+<col width="8%"></col>
+<col width="19%"></col>
+<col width="32%"></col>
+<col width="31%"></col>
+<col width="7%"></col>
+</colgroup>
 <thead>
 <tr class="header">
 <th>Feature</th>
@@ -502,32 +509,39 @@ summary {
 </thead>
 <tbody>
 <tr class="odd">
-<td>unit</td>
+<td><strong>unit</strong></td>
 <td>OTU</td>
 <td>unigene</td>
 <td>trascribed unigene</td>
 <td>transcribed gene</td>
 </tr>
 <tr class="even">
-<td>condition</td>
+<td><strong>condition</strong></td>
 <td>sampling station</td>
 <td>sampling station</td>
 <td>sampling station</td>
 <td>cell</td>
 </tr>
 <tr class="odd">
-<td>normalization</td>
+<td><strong>normalization</strong></td>
 <td>TSS</td>
 <td>RPKM+TSS</td>
 <td>RPKM+TSS</td>
 <td>CPM</td>
 </tr>
 <tr class="even">
-<td>value type</td>
+<td><strong>value type</strong></td>
 <td>rel.abundance</td>
 <td>rel.abundance</td>
 <td>rel. abundance</td>
 <td>rel. abundance</td>
+</tr>
+<tr class="odd">
+<td><strong>applied filter</strong></td>
+<td>OTUs occurring in at least 20 stations</td>
+<td>unigenes in common with metaT and occurring in at least 20 stations</td>
+<td>unigenes in common with metaG and occurring in at 20 least stations</td>
+<td>none</td>
 </tr>
 </tbody>
 </table>

@@ -52,13 +52,13 @@ Transcriptomes of P. multistriata (Basu et al, 2017); normalization CPM (Counts 
 
 
 
-Feature       | metaB                | metaG             | metaT              | Transcriptome
-------------- | -------------------- | ----------------- |------------------- | ----------------
-unit          | OTU                  | unigene           | trascribed unigene | transcribed gene
-condition     | sampling station     | sampling station  | sampling station   | cell
-normalization | TSS                  | RPKM+TSS          | RPKM+TSS           | CPM
-value type    | rel.abundance        | rel.abundance     | rel. abundance     | rel. abundance
-
+Feature            |  metaB                                  | metaG                                                               | metaT                                                              | Transcriptome
+-------------------|-----------------------------------------|---------------------------------------------------------------------|--------------------------------------------------------------------|-----------------
+**unit**           |  OTU                                    | unigene                                                             | trascribed unigene                                                 | transcribed gene
+**condition**      |  sampling station                       | sampling station                                                    | sampling station                                                   | cell
+**normalization**  |  TSS                                    | RPKM+TSS                                                            | RPKM+TSS                                                           | CPM
+**value type**     |  rel.abundance                          | rel.abundance                                                       | rel. abundance                                                     | rel. abundance
+**applied filter** |  OTUs occurring in at least 20 stations | unigenes in common with metaT and occurring in at least 20 stations |unigenes in common with metaG and occurring in at 20 least stations | none 
 
 <br>
 
