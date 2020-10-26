@@ -118,12 +118,11 @@ metab_richness %>%
                  fill = "white") +
   geom_density(alpha = .2, fill = "antiquewhite3") +
   xlab("n of OTUs") +
-  #scale_x_continuous(breaks=unique(metab_ubiquity$ubiquity)) +
   theme_bw() +
   ggtitle(paste0("Station richness; ", n_distinct(metab_richness$St.label), " stations"),
           subtitle = "metaB, Diatoms; 20-180um, SUR") +
   annotation_custom(gridExtra::tableGrob(metab_richness_table), xmin=400, xmax=500, 
-                    ymin=0.002, ymax=0.004)
+                    ymin=0.004, ymax=0.008)
 ```
 
 
@@ -230,8 +229,8 @@ metag_richness %>%
   theme_bw() +
   ggtitle(paste0("Station richness; ", n_distinct(metag_richness$St.label), " stations"),
           subtitle = "metaG, Diatoms; 20-180um, SUR") +
-  annotation_custom(gridExtra::tableGrob(metag_richness_table), xmin=2e+05, xmax=3e+05, 
-                    ymin=1e-05, ymax=2.5e-05)
+  annotation_custom(gridExtra::tableGrob(metag_richness_table), xmin=3e+05, xmax=4e+05, 
+                    ymin=1.5e-05, ymax=3e-05)
 
 ```
 
@@ -268,13 +267,13 @@ metat_richness %>%
   theme_bw() +
   ggtitle(paste0("Station richness; ", n_distinct(metat_richness$St.label), " stations"),
           subtitle = "metaT, Diatoms; 20-180um, SUR") +
-  annotation_custom(gridExtra::tableGrob(metat_richness_table), xmin=3e+05, xmax=4e+05, 
-                    ymin=4e-06, ymax=1e-05)
+  annotation_custom(gridExtra::tableGrob(metat_richness_table), xmin=4e+05, xmax=5.5e+05, 
+                    ymin= 2.5e-06, ymax=1.5e-05)
 ```
 
 
 #### P.mu
-```{r a4}
+```{r eval=FALSE}
 
 #transcriptomics
 p.mu_ts <-read_xlsx("C:/Users/Userszn/Documents/PhD/script/Pseudonitzschia/Transcriptomics/Copy of all.annot.xlsx")
@@ -404,7 +403,10 @@ moments_metab_stations <- metabrelab %>%
             kurtosis = kurtosis(relab),
             richness = n_distinct(OTU)) %>%
   mutate(logme = log10(mean), logvar = log10(variance),
-         source = c("metab_tara"))
+         source = c("metab_tara")) %>% 
+  na.omit()
+
+lm.metab.meanvar <-lm(formula = log10(moments_metab_stations$variance) ~ log10(moments_metab_stations$mean))
 
 moments_metab_stations %>%
   ggplot() + 
@@ -412,15 +414,18 @@ moments_metab_stations %>%
   geom_point(aes(col = richness), size = 3) +
   scale_colour_viridis_c() + 
   geom_smooth(method = "lm", formula = y ~ x) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
   ggtitle(paste0("Mean and Variance; ",
                  n_distinct(moments_metab_stations$St.label), " stations"),
           subtitle = ("metaB, diatoms, 20-180, SUR")) +
-    labs(caption = "log-log")
+    labs(caption = "log-log") +
+   geom_label(aes(x = 0.001, y = 3e-02), hjust = 0,
+             label = paste("y = ", signif(lm.metab.meanvar$coef[[1]],5), 
+      "x +", signif(lm.metab.meanvar$coef[[2]], 5),
+      "\nAdj R2 = ", signif(summary(lm.metab.meanvar)$adj.r.squared, 5),
+      " \nP < 2.2e-16"))
 
 ```
 
@@ -439,25 +444,29 @@ moments_metag_stations <- metag %>%
             kurtosis = kurtosis(value),
             richness = n_distinct(geneid)) %>%
   mutate(logme = log10(mean), logvar = log10(variance),
-         source = c("metag_tara"))
+         source = c("metag_tara")) %>% 
+  na.omit()
 
+lm.metag.meanvar <-lm(formula = log10(moments_metag_stations$variance) ~ log10(moments_metag_stations$mean))
 
 moments_metag_stations %>%
   ggplot() + 
   aes(x=mean, y=variance) + 
-  #geom_point(col = "gray", size = 1) +
   geom_point(aes(col=richness), size = 3) +
   scale_colour_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ x) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
   ggtitle(paste0("Mean and Variance; ",
                  n_distinct(moments_metag_stations$St.label), " stations"),
           subtitle = ("metaG, diatoms, 20-180, SUR")) +
-    labs(caption = "log-log")
+    labs(caption = "log-log")  +
+   geom_label(aes(x = 1.5e-06, y = 1.5e-06), hjust = 0,
+             label = paste("y = ", signif(lm.metag.meanvar$coef[[1]],5), 
+      "x +", signif(lm.metag.meanvar$coef[[2]], 5),
+      "\nAdj R2 = ", signif(summary(lm.metag.meanvar)$adj.r.squared, 5),
+      " \nP < 2.2e-16"))
 ```
 
 
@@ -475,8 +484,10 @@ moments_metat_stations <- metat %>%
             kurtosis = kurtosis(value),
             richness = n_distinct(geneid)) %>%
   mutate(logme = log10(mean), logvar = log10(variance),
-         source = c("metat_tara"))
+         source = c("metat_tara")) %>% 
+  na.omit()
 
+lm.metat.meanvar <-lm(formula = log10(moments_metat_stations$variance) ~ log10(moments_metat_stations$mean))
 
 moments_metat_stations %>%
   ggplot() + 
@@ -484,15 +495,18 @@ moments_metat_stations %>%
   geom_point(aes(col=richness), size=3) +
   scale_color_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ x) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
   ggtitle(paste0("Mean and Variance; ",
                  n_distinct(moments_metat_stations$St.label), " stations"),
           subtitle = ("metaT, diatoms, 20-180, SUR")) +
-    labs(caption = "log-log")
+    labs(caption = "log-log") +
+   geom_label(aes(x = 1e-06, y = 1e-06), hjust = 0,
+             label = paste("y = ", signif(lm.metat.meanvar$coef[[1]],5), 
+      "x +", signif(lm.metat.meanvar$coef[[2]], 5),
+      "\nAdj R2 = ", signif(summary(lm.metat.meanvar)$adj.r.squared, 5),
+      " \nP < 2.2e-16"))
 ```
 
 #### P.multistriata
@@ -510,7 +524,8 @@ moments_p.mu_conditions <- p.mu_ts1 %>%
             kurtosis = kurtosis(value),
             richness = n_distinct(Row.names)) %>%
   mutate(logme = log10(mean), logvar = log10(variance),
-         source = c("p.mu"))
+         source = c("p.mu")) %>% 
+  na.omit()
 
 
 moments_p.mu_conditions %>%
@@ -520,8 +535,6 @@ moments_p.mu_conditions %>%
   geom_point(aes(col=richness), size=3) +
   scale_color_viridis_c() +
   geom_smooth(method = "lm", formula = y ~ x) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() +
@@ -536,7 +549,8 @@ moments_p.mu_conditions %>%
 ```{r c5}
 moments_metaBrelGT_stations <- rbind(moments_metab_stations,
       moments_metag_stations,
-      moments_metat_stations)
+      moments_metat_stations) %>% 
+  na.omit()
 
 
 #moments_between_data <- moments_metaBrelGT_stations %>%
@@ -569,20 +583,27 @@ moments_metaBrelGT_stations <- rbind(moments_metab_stations,
 
 
 ```{r c6}
+
+lm.all.meanvar <-lm(formula = log10(moments_metaBrelGT_stations$variance) ~ log10(moments_metaBrelGT_stations$mean))
+
 moments_metaBrelGT_stations %>%
   ggplot() +
   aes(x=mean, y=variance) +
   geom_point(aes(col = source), size = 3, alpha = .5) +
   geom_smooth(method = "lm", formula = y ~ x) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   scale_x_log10() +
   scale_y_log10() + 
   ggtitle("Mean and Variance",
           subtitle = "All datasets")  +
   guides(colour = guide_legend(override.aes = list(size=3))) +
-    labs(caption = "log-log")
+    labs(caption = "log-log") +
+   geom_label(aes(x = 1e-06, y = 1e-02), hjust = 0,
+             label = paste("y = ", signif(lm.all.meanvar$coef[[1]],5), 
+      "x +", signif(lm.all.meanvar$coef[[2]], 5),
+      "\nAdj R2 = ", signif(summary(lm.all.meanvar)$adj.r.squared, 5),
+      "x +", signif(lm.all.meanvar$coef[[2]], 5),
+      " \nP < 2.2e-16"))
 ```
 
 
@@ -667,6 +688,8 @@ moments_metaBrelGT_stations %>%
 
 #### metaB
 ```{r e1}
+lm.metab.sk <-lm(formula = moments_metab_stations$kurtosis ~ poly(moments_metab_stations$skewness, 2, raw=T))
+
 moments_metab_stations %>%
   ggplot() + 
   aes(x=skewness, y=kurtosis) + 
@@ -674,18 +697,23 @@ moments_metab_stations %>%
   geom_point(aes(col = richness), size = 3) +
   scale_colour_viridis_c() + 
   geom_smooth(method = lm, formula = y~poly(x,2)) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metab_stations$St.label), " stations"),
-          subtitle = ("metaB, diatoms, 20-180, SUR"))
+          subtitle = ("metaB, diatoms, 20-180, SUR")) +
+  geom_label(aes(x = 0, y = 700), hjust = 0,
+             label = paste("y = ", signif(lm.metab.sk$coef[[1]],5 ), 
+                           "x^2 +", signif(lm.metab.sk$coef[[2]], 5),
+                           "x + ", signif(lm.metab.sk$coef[[3]], 5),
+                           "\nAdj R2 = ", signif(summary(lm.metab.sk)$adj.r.squared, 5),
+                           " \nP < 2.2e-16"))
 ```
 
 
 #### metaG
 
 ```{r e2}
+lm.metag.sk <-lm(formula = moments_metag_stations$kurtosis ~ poly(moments_metag_stations$skewness, 2, raw=T))
 
 moments_metag_stations %>%
   ggplot() + 
@@ -694,29 +722,40 @@ moments_metag_stations %>%
   geom_point(aes(col=richness), size=3) +
   scale_color_viridis_c() +
   geom_smooth(method = lm, formula = y~poly(x,2)) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metag_stations$St.label), " stations"),
-          subtitle = ("metaG, diatoms, 20-180, SUR"))
+          subtitle = ("metaG, diatoms, 20-180, SUR"))  +
+  geom_label(aes(x = 0, y = 62500), hjust = 0,
+             label = paste("y = ", signif(lm.metag.sk$coef[[1]],5 ), 
+                           "x^2 +", signif(lm.metag.sk$coef[[2]], 5),
+                           "x + ", signif(lm.metag.sk$coef[[3]], 5),
+                           "\nAdj R2 = ", signif(summary(lm.metag.sk)$adj.r.squared, 5),
+                           " \nP < 2.2e-16"))
 ```
 
 #### metaT
 
 ```{r e3}
+
+lm.metat.sk <-lm(formula = moments_metat_stations$kurtosis ~ poly(moments_metat_stations$skewness, 2, raw=T))
+
 moments_metat_stations %>%
   ggplot() + 
   aes(x=skewness, y=kurtosis) + 
   geom_point(aes(col=richness), size = 3) +
   scale_color_viridis_c() +
   geom_smooth(method = lm, formula = y~poly(x,2)) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_metat_stations$St.label), " stations"),
-          subtitle = ("metaT, diatoms, 20-180, SUR"))
+          subtitle = ("metaT, diatoms, 20-180, SUR"))  +
+  geom_label(aes(x = 0, y = 70000), hjust = 0,
+             label = paste("y = ", signif(lm.metat.sk$coef[[1]],5 ), 
+                           "x^2 +", signif(lm.metat.sk$coef[[2]], 5),
+                           "x + ", signif(lm.metat.sk$coef[[3]], 5),
+                           "\nAdj R2 = ", signif(summary(lm.metat.sk)$adj.r.squared, 5),
+                           " \nP < 2.2e-16"))
 ```
 
 
@@ -744,38 +783,46 @@ moments_pn <- p.mu_ts1 %>%
          logvar = log10(variance), 
          source=c("p.multistriata"))
 
+lm.pn.sk <-lm(formula = moments_pn$kurtosis ~ moments_pn$skewness)
 
 moments_pn %>%
   ggplot() +
   aes(x=skewness, y=kurtosis) + 
   geom_point(col = "gray", size = 3) +
   geom_smooth(method = lm, formula = y~poly(x,2)) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle(paste0("Skewness and Kurtosis; ",
                  n_distinct(moments_pn$name), " cells"),
-          subtitle = ("Transcriptomes, P.multistriata"))
+          subtitle = ("Transcriptomes, P.multistriata")) +
+   geom_label(aes(x = 15, y = 6000), hjust = 0,
+             label = paste("y = ", signif(lm.pn.sk$coef[[1]],5), 
+      "x +", signif(lm.pn.sk$coef[[2]], 5),
+      "\nAdj R2 = ", signif(summary(lm.pn.sk)$adj.r.squared, 5),
+      " \nP < 2.2e-16"))
 ```
 
 
-#### all
+#### all (TARA)
 
 ```{r e5}
 
-moments_p.mu_conditions %>% 
-  rename(St.label = name) %>% 
-  rbind(moments_metaBrelGT_stations) %>%
+all_data.sk <-lm(formula = moments_metaBrelGT_stations$kurtosis ~ poly(moments_metaBrelGT_stations$skewness, 2, raw=T))
+
+moments_metaBrelGT_stations %>% 
   ggplot() +
   aes(x=skewness, y=kurtosis) +
   geom_point(aes(col = source), size = 3, alpha = .5) +
   geom_smooth(method = lm, formula = y~poly(x,2)) +
-  ggpubr::stat_regline_equation(label.x.npc = "left", label.y.npc = "top") +
-  ggpubr::stat_cor(label.x.npc = "middle", label.y.npc = "bottom") +
   theme_bw() +
   ggtitle("Skewness and Kurtosis",
           subtitle = "All datasets")  +
-  guides(colour = guide_legend(override.aes = list(size=3)))
+  guides(colour = guide_legend(override.aes = list(size=3))) +
+  geom_label(aes(x = 0, y = 70000), hjust = 0,
+             label = paste("y = ", signif(all_data.sk$coef[[1]],5 ), 
+                           "x^2 +", signif(all_data.sk$coef[[2]], 5),
+                           "x + ", signif(all_data.sk$coef[[3]], 5),
+                           "\nAdj R2 = ", signif(summary(all_data.sk)$adj.r.squared, 5),
+                           " \nP < 2.2e-16"))
 ```
 
 
