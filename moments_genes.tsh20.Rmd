@@ -471,7 +471,7 @@ all_data %>%
   ggtitle("Mean and Variance",
           subtitle = "All datasets")  +
   guides(colour = guide_legend(override.aes = list(size=3))) +
-   geom_label(aes(x = 1e-01, y = 1e+06), hjust = 0,
+   geom_label(aes(x = 1e-01, y = 1e+07), hjust = 0,
              label = paste("y = ", signif(lm.all.meanvar$coef[[1]],5), 
       "x +", signif(lm.all.meanvar$coef[[2]], 5),
       "\nAdj R2 = ", signif(summary(lm.all.meanvar)$adj.r.squared, 5),
