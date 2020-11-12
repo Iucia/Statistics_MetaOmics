@@ -1,0 +1,446 @@
+---
+title: "Locey metaBGT"
+subtitle: "Community level"
+author: "Lucia Campese"
+date: "Oct 2020"
+output:
+  html_document:
+    code_folding: hide
+    self_contained: true
+---
+
+```{r import, include=F}
+knitr::opts_chunk$set(message = F, error = F, warning = F, echo = F,
+                          cache = T)
+```
+
+<style>
+.column-left{
+  float: left;
+  width: 50%;
+  text-align: left;
+}
+.column-right{
+  float: right;
+  width: 50%;
+  text-align: right;
+}
+</style>
+
+<br>
+
+### Aim 
+
+Apply analyses from Locey and Lennon (2016) to TARA Oceans metabarcoding metagenomic and metatranscriptomic data, considering whether the number of OTUs and unigenes in an assemblage (N) is one of the most powerful constraints on commonness and rarity and one of the most expansive variables across which aspects of biodiversity could scale.
+
+<br>
+
+### Datasets
+#### metaB: 
+V9 region; OTU reads; Diatoms; 20-180, SUR.
+
+#### metaG: 
+MATOU-v2 unigene read counts; Diatoms; 20-180; SUR.
+
+#### metaT: 
+MATOU-v2 unigene read counts; Diatoms; 20-180; SUR.
+
+
+<br>
+<br>
+
+Feature            |  metaB                                  | metaG                                                               | metaT                                                              |
+-------------------|-----------------------------------------|---------------------------------------------------------------------|--------------------------------------------------------------------|
+**unit**           |  OTU                                    | unigene                                                             | trascribed unigene                                                 |
+**condition**      |  sampling station                       | sampling station                                                    | sampling station                                                   |
+**value type**     |  read counts                            | read counts                                                         | read counts                                                        |
+
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+<br>
+
+
+### 1. Locey Plot {.tabset}
+
+#### metaB
+```{r a1, fig.height=10, fig.width=10}
+library(data.table)
+library(tidyverse)
+library(e1071)
+library(patchwork)
+
+metab <- fread("C:/Users/Userszn/Documents/PhD/TARA_Data/metaB/diatoms/barv2016202_swarm_d1_t100.txt", 
+               sep = " ", stringsAsFactors = F)
+
+metab1 <- metab %>% 
+  rename(OTU = V1) %>% 
+  pivot_longer(`TARA_158_SRF_20-180`:`TARA_078_DCM_20-180`) %>% 
+  filter(grepl("SRF", name), value >0) %>% 
+  separate(name, into = c("TARA", "St.label", "roba", "roba2"), sep = "_") %>% 
+  select(OTU, St.label, value)
+
+metab.locey <- metab1 %>% 
+  group_by(St.label) %>% 
+  summarise(`Number of reads` = sum(value),
+            Rarity = abs(skewness(value)+1),
+            Dominance = max(value),
+            Evenness = vegan::diversity(value, "invsimpson")/n_distinct(OTU),
+            Richness = n_distinct(OTU)) %>% 
+  ungroup()
+
+#rarity
+lm.metab.rarity <- lm(formula = log10(metab.locey$Rarity) ~ log10(metab.locey$`Number of reads`))
+
+frar.b <- function(.x)  (10**lm.metab.rarity$coefficients[1]) * .x**lm.metab.rarity$coefficients[2]
+
+rarity.metab <- metab.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Rarity) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = frar.b, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaB, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+01, y = 20), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metab.rarity$coef[[1]], 2),
+                           "* N^", signif(lm.metab.rarity$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metab.rarity)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+
+#dominance
+lm.metab.dominance <-lm(formula = log10(metab.locey$Dominance) ~ log10(metab.locey$`Number of reads`))
+
+fdom.b <- function(.x)  (10**lm.metab.dominance$coefficients[1]) * .x**lm.metab.dominance$coefficients[2]
+
+dominance.metab <- metab.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Dominance) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = fdom.b, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaB, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+01, y = 1e+05), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metab.dominance$coef[[1]], 2),
+                           "* N^", signif(lm.metab.dominance$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metab.dominance)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+#evenness
+lm.metab.evenness <-lm(formula = log10(metab.locey$Evenness) ~ log10(metab.locey$`Number of reads`))
+
+feven.b <- function(.x)  (10**lm.metab.evenness$coefficients[1]) * .x**lm.metab.evenness$coefficients[2]
+
+
+evenness.metab <- metab.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = `Evenness`) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = feven.b, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaB, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+01, y = 0.01), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metab.evenness$coef[[1]], 2),
+                           "* N^", signif(lm.metab.evenness$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metab.evenness)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+#richness
+lm.metab.richness <-lm(formula = log10(metab.locey$Richness) ~ log10(metab.locey$`Number of reads`))
+
+fric.b <- function(.x)  (10**lm.metab.richness$coefficients[1]) * .x**lm.metab.richness$coefficients[2]
+
+richness.metab <- metab.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Richness) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = fric.b, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaB, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+01, y = 500), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metab.richness$coef[[1]], 2),
+                           "* N^", signif(lm.metab.richness$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metab.richness)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+(rarity.metab | dominance.metab) / (evenness.metab | richness.metab)
+```
+
+#### metaG
+
+```{r a2, fig.height=10, fig.width=10}
+library(data.table)
+library(tidyverse)
+library(e1071)
+library(patchwork)
+
+####METAG
+load("C:/Users/Userszn/Documents/PhD/Thesis_writing/metag.baci.gidstcounts.RData")
+
+colnames(metag.baci.gidstcounts) <- c("geneid", "St.label", "value")
+
+metag.locey <- metag.baci.gidstcounts %>% 
+  group_by(St.label) %>% 
+  summarise(`Number of reads` = sum(value),
+            Rarity = abs(skewness(value)+1),
+            Dominance = max(value),
+            Evenness = vegan::diversity(value, "invsimpson")/n_distinct(geneid),
+            Richness = n_distinct(geneid)) %>% 
+  ungroup()
+
+
+#rarity
+lm.metag.rarity <- lm(formula = log10(metag.locey$Rarity) ~ log10(metag.locey$`Number of reads`))
+
+frar.g <- function(.x)  (10**lm.metag.rarity$coefficients[1]) * .x**lm.metag.rarity$coefficients[2]
+
+rarity.metag <-  metag.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Rarity) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = frar.g, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaG, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+04, y = 250), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metag.rarity$coef[[1]], 2),
+                           "* N^", signif(lm.metag.rarity$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metag.rarity)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+#dominance
+lm.metag.dominance <-lm(formula = log10(metag.locey$Dominance) ~ log10(metag.locey$`Number of reads`))
+
+fdom.g <- function(.x)  (10**lm.metag.dominance$coefficients[1]) * .x**lm.metag.dominance$coefficients[2]
+
+dominance.metag <- metag.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Dominance) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = fdom.g, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaG, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+04, y = 1e+05), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metag.dominance$coef[[1]], 2),
+                           "* N^", signif(lm.metag.dominance$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metag.dominance)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+#evenness
+lm.metag.evenness <-lm(formula = log10(metag.locey$Evenness) ~ log10(metag.locey$`Number of reads`))
+
+feven.g <- function(.x)  (10**lm.metag.evenness$coefficients[1]) * .x**lm.metag.evenness$coefficients[2]
+
+evenness.metag <- metag.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Evenness) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = feven.g, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaG, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+04, y = 0.001), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metag.evenness$coef[[1]], 2),
+                           "* N^", signif(lm.metag.evenness$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metag.evenness)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+
+#richness
+lm.metag.richness <-lm(formula = log10(metag.locey$Richness) ~ log10(metag.locey$`Number of reads`))
+
+fric.g <- function(.x)  (10**lm.metag.richness$coefficients[1]) * .x**lm.metag.richness$coefficients[2]
+
+richness.metag <- metag.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Richness) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = fric.g, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaG, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+04, y = 1e+06), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metag.richness$coef[[1]], 2),
+                           "* N^", signif(lm.metag.richness$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metag.richness)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+(rarity.metag | dominance.metag) / (evenness.metag | richness.metag)
+
+
+```
+
+
+#### metaT
+```{r a3, fig.height=10, fig.width=10}
+library(data.table)
+library(tidyverse)
+library(e1071)
+library(patchwork)
+
+##### METAT
+load("C:/Users/Userszn/Documents/PhD/Thesis_writing/metat.baci.gidstcounts.RData")
+
+colnames(metat.baci.gidstcounts) <- c("geneid", "St.label", "value")
+
+metat.locey <- metat.baci.gidstcounts %>% 
+  group_by(St.label) %>% 
+  summarise(`Number of reads` = sum(value),
+            Rarity = abs(skewness(value)+1),
+            Dominance = max(value),
+            Evenness = vegan::diversity(value, "invsimpson")/n_distinct(geneid),
+            Richness = n_distinct(geneid)) %>% 
+  ungroup()
+
+
+#rarity
+lm.metat.rarity <- lm(formula = log10(metat.locey$Rarity) ~ log10(metat.locey$`Number of reads`))
+
+frar.t <- function(.x)  (10**lm.metat.rarity$coefficients[1]) * .x**lm.metat.rarity$coefficients[2]
+
+rarity.metat <-  metat.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Rarity) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = frar.t, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaT, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+04, y = 200), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metat.rarity$coef[[1]], 2),
+                           "* N^", signif(lm.metat.rarity$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metat.rarity)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+#dominance
+lm.metat.dominance <-lm(formula = log10(metat.locey$Dominance) ~ log10(metat.locey$`Number of reads`))
+
+fdom.t <- function(.x)  (10**lm.metat.dominance$coefficients[1]) * .x**lm.metat.dominance$coefficients[2]
+
+dominance.metat <- metat.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Dominance) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = fdom.t, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaT, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+04, y = 1e+05), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metat.dominance$coef[[1]], 2),
+                           "* N^", signif(lm.metat.dominance$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metat.dominance)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+#evenness
+lm.metat.evenness <-lm(formula = log10(metat.locey$Evenness) ~ log10(metat.locey$`Number of reads`))
+
+feven.t <- function(.x)  (10**lm.metat.evenness$coefficients[1]) * .x**lm.metat.evenness$coefficients[2]
+
+evenness.metat <- metat.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Evenness) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = feven.t, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaT, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+04, y = 0.1), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metat.evenness$coef[[1]], 2),
+                           "* N^", signif(lm.metat.evenness$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metat.evenness)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+
+#richness
+lm.metat.richness <-lm(formula = log10(metat.locey$Richness) ~ log10(metat.locey$`Number of reads`))
+
+fric.t <- function(.x)  (10**lm.metat.richness$coefficients[1]) * .x**lm.metat.richness$coefficients[2]
+
+richness.metat <- metat.locey %>% 
+  ggplot() +
+  aes(x=`Number of reads`, y = Richness) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = "y~x") +
+  stat_function(fun = fric.t, col = "red", lty = 3) +
+  theme_bw() + 
+  ggtitle("Diatoms, metaT, 20-180um, SUR", "Locey Fig.1") +
+  scale_x_log10() +
+  scale_y_log10() +
+  geom_label(aes(x = 1e+04, y = 1e+06), hjust = 0,
+             label = paste("y = ",
+                           signif(10**lm.metat.richness$coef[[1]], 2),
+                           "* N^", signif(lm.metat.richness$coef[[2]], 2),
+                           "\nAdj R2 = ", signif(summary(lm.metat.richness)$adj.r.squared, 3),
+                           " \nP < 2.2e-16")) +
+  labs(caption = "log-log")
+
+
+(rarity.metat | dominance.metat) / (evenness.metat | richness.metat)
+
+```
+
