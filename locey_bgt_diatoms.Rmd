@@ -107,7 +107,7 @@ rarity.metab <- metab.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = frar.b, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaB, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaB, 20-180um, SUR") +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+01, y = 20), hjust = 0,
@@ -132,7 +132,7 @@ dominance.metab <- metab.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = fdom.b, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaB, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaB, 20-180um, SUR" ) +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+01, y = 1e+05), hjust = 0,
@@ -157,7 +157,7 @@ evenness.metab <- metab.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = feven.b, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaB, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaB, 20-180um, SUR") +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+01, y = 0.01), hjust = 0,
@@ -181,7 +181,7 @@ richness.metab <- metab.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = fric.b, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaB, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaB, 20-180um, SUR") +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+01, y = 500), hjust = 0,
@@ -231,7 +231,7 @@ rarity.metag <-  metag.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = frar.g, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaG, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaG, 20-180um, SUR") +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+04, y = 250), hjust = 0,
@@ -255,7 +255,7 @@ dominance.metag <- metag.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = fdom.g, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaG, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaG, 20-180um, SUR" ) +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+04, y = 1e+05), hjust = 0,
@@ -279,7 +279,7 @@ evenness.metag <- metag.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = feven.g, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaG, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaG, 20-180um, SUR" ) +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+04, y = 0.001), hjust = 0,
@@ -304,7 +304,7 @@ richness.metag <- metag.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = fric.g, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaG, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaG, 20-180um, SUR" ) +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+04, y = 1e+06), hjust = 0,
@@ -355,7 +355,7 @@ rarity.metat <-  metat.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = frar.t, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaT, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaT, 20-180um, SUR" ) +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+04, y = 200), hjust = 0,
@@ -379,7 +379,7 @@ dominance.metat <- metat.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = fdom.t, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaT, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaT, 20-180um, SUR" ) +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+04, y = 1e+05), hjust = 0,
@@ -403,7 +403,7 @@ evenness.metat <- metat.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = feven.t, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaT, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaT, 20-180um, SUR" ) +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+04, y = 0.1), hjust = 0,
@@ -428,7 +428,7 @@ richness.metat <- metat.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = fric.t, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaT, 20-180um, SUR", "Locey Fig.1") +
+  ggtitle("Diatoms, metaT, 20-180um, SUR" ) +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+04, y = 1e+06), hjust = 0,
