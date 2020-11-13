@@ -304,7 +304,7 @@ richness.metag <- metag.locey %>%
   geom_smooth(method = "lm", formula = "y~x") +
   stat_function(fun = fric.g, col = "red", lty = 3) +
   theme_bw() + 
-  ggtitle("Diatoms, metaG, 20-180um, SUR" ) +
+  ggtitle("Diatoms, metaG, 20-180um, SUR") +
   scale_x_log10() +
   scale_y_log10() +
   geom_label(aes(x = 1e+04, y = 1e+06), hjust = 0,
