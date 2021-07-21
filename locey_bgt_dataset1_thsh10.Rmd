@@ -1,8 +1,8 @@
 ---
 title: "Locey metaBGT"
-subtitle: "Community level"
+subtitle: "Community level; Dataset 1: thsh 10"
 author: "Lucia Campese"
-date: "Oct 2020"
+date: "July 2021"
 output:
   html_document:
     code_folding: hide
