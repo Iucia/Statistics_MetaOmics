@@ -198,7 +198,7 @@ richness.metab <- metab_thsh10_locey %>%
 
 
 library(patchwork)
-(richness.metab | dominance.metab) / (rarity.metab | evenness.metab)
+(rarity.metab | dominance.metab) / ( evenness.metab | richness.metab )
 
 ```
 
@@ -318,7 +318,7 @@ richness.metag <- metag_thsh10_locey %>%
                            " \nP < 2.2e-16")) +
   labs(caption = "log-log")
 
-(richness.metag | dominance.metag) / (rarity.metag | evenness.metag)
+(rarity.metag | dominance.metag) / ( evenness.metag | richness.metag)
 
 
 ```
@@ -440,7 +440,7 @@ richness.metat <- metat_thsh10_genesmetaG_locey %>%
   labs(caption = "log-log")
 
 
-(richness.metat | dominance.metat) / (rarity.metat | evenness.metat)
+(rarity.metat | dominance.metat) / ( evenness.metat | richness.metat)
 
 
 ```
